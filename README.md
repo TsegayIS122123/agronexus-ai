@@ -12,9 +12,9 @@
 [![codecov](https://codecov.io/gh/TsegayIS122123/agronexus-ai/branch/main/graph/badge.svg)](https://codecov.io/gh/TsegayIS122123/agronexus-ai)
 [![Twitter Follow](https://img.shields.io/twitter/follow/AgroNexusAI?style=social)](https://twitter.com/AgroNexusAI)
 
-<p align="center">
+<!-- <p align="center">
   <img src="docs/images/logo.png" alt="AgroNexus AI Logo" width="200"/>
-</p>
+</p> -->
 
 <h3 align="center">
   Connecting Ethiopian Agriculture to Industry Through Artificial Intelligence
@@ -552,9 +552,9 @@ Special thanks to the open-source communities behind:
 
 If you find this project helpful, please give it a ⭐ on GitHub!
 
-<p align="center">
+<!-- <p align="center">
   <img src="docs/images/agronexus-logo.png" alt="AgroNexus AI Logo" width="150"/>
-</p>
+</p> -->
 
 <p align="center">
   <b>From Soil to Shelf, Powered by AI</b><br>
@@ -564,7 +564,5 @@ If you find this project helpful, please give it a ⭐ on GitHub!
 <p align="center">
 © 2026 AgroNexus AI. All rights reserved. This demo showcases proprietary technology.
 Unauthorized reproduction or distribution of this software is prohibited.
-  Made with ❤️ in Addis Ababa, Ethiopia
+<br>Made with ❤️ in Addis Ababa, Ethiopia
 </p>
-```
----
