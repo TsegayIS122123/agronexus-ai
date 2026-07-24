@@ -1,1 +1,2 @@
-from app.routes import auth, disease
+from app.routes import auth
+from app.routes import disease
