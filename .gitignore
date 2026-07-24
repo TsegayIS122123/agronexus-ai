@@ -42,3 +42,18 @@ logs/
 # Docker
 *.pid
 docker-compose.override.yml
+
+# YOLO Models
+*.pt
+*.onnx
+*.engine
+*.weights
+models/
+data/
+runs/
+
+# Training artifacts
+*.cache
+*.log
+*.jpg
+*.png

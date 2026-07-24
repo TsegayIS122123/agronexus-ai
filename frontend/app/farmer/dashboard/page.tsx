@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 export default function FarmerDashboard() {
   const router = useRouter();
@@ -64,15 +65,15 @@ export default function FarmerDashboard() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Disease Detection Card */}
-          <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition">
-            <div className="text-4xl mb-4">🔬</div>
-            <h3 className="text-xl font-semibold mb-2">Disease Detection</h3>
-            <p className="text-gray-600 mb-4">Upload crop photo for instant AI diagnosis</p>
-            <button disabled className="text-green-600 font-medium opacity-50 cursor-not-allowed">
-              Coming Soon →
-            </button>
-          </div>
+          {/* Disease Detection Card - NOW ACTIVE */}
+          <Link href="/farmer/disease" className="block">
+            <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition hover:scale-105 cursor-pointer">
+              <div className="text-4xl mb-4">🔬</div>
+              <h3 className="text-xl font-semibold mb-2">Disease Detection</h3>
+              <p className="text-gray-600 mb-4">Upload crop photo for instant AI diagnosis</p>
+              <span className="text-green-600 font-medium">Try Now →</span>
+            </div>
+          </Link>
 
           {/* AI Assistant Card */}
           <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition">

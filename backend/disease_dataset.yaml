@@ -1,0 +1,16 @@
+# YOLOv8 Dataset Configuration
+# Dataset is in project root (../data/)
+
+path: ../data/dataset
+train: images/train
+val: images/val
+test: images/test
+
+nc: 6
+names:
+  0: teff_rust
+  1: teff_smut
+  2: wheat_rust
+  3: wheat_smut
+  4: maize_leaf_blight
+  5: coffee_rust
