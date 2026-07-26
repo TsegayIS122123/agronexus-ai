@@ -34,6 +34,11 @@ def create_access_token(data: dict):
     to_encode = data.copy()
     expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
+    
+    # Ensure role is in the token
+    if "role" not in to_encode:
+        to_encode["role"] = "farmer"  # Default fallback
+    
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 def register_farmer(db: Session, farmer_data: FarmerRegister):
@@ -68,4 +73,15 @@ def authenticate_farmer(db: Session, email: str, password: str):
         return None
     if not verify_password(password, farmer.password_hash):
         return None
-    return farmer
+    
+    # Include role in the returned user object
+    return {
+        "id": farmer.id,
+        "name": farmer.name,
+        "email": farmer.email,
+        "phone": farmer.phone,
+        "language": farmer.language,
+        "role": farmer.role,  # ← ADD THIS
+        "is_verified": farmer.is_verified,
+        "created_at": farmer.created_at
+    }

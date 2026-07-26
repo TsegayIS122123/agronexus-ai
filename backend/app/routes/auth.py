@@ -10,7 +10,12 @@ router = APIRouter(prefix="/api/v1/auth", tags=["Authentication"])
 def register(farmer_data: FarmerRegister, db: Session = Depends(get_db)):
     try:
         farmer = register_farmer(db, farmer_data)
-        token = create_access_token(data={"sub": str(farmer.id)})
+        
+        # Include role in token
+        token = create_access_token(data={
+            "sub": str(farmer.id),
+            "role": farmer.role
+        })
         
         return TokenResponse(
             access_token=token,
@@ -20,6 +25,7 @@ def register(farmer_data: FarmerRegister, db: Session = Depends(get_db)):
                 "email": farmer.email,
                 "phone": farmer.phone,
                 "language": farmer.language,
+                "role": farmer.role,  # ← ADD ROLE
                 "is_verified": farmer.is_verified,
                 "created_at": farmer.created_at
             }
@@ -33,17 +39,22 @@ def login(credentials: FarmerLogin, db: Session = Depends(get_db)):
     if not farmer:
         raise HTTPException(status_code=401, detail="Invalid email or password")
     
-    token = create_access_token(data={"sub": str(farmer.id)})
+    # Include role in token
+    token = create_access_token(data={
+        "sub": str(farmer["id"]),
+        "role": farmer["role"]
+    })
     
     return TokenResponse(
         access_token=token,
         user={
-            "id": farmer.id,
-            "name": farmer.name,
-            "email": farmer.email,
-            "phone": farmer.phone,
-            "language": farmer.language,
-            "is_verified": farmer.is_verified,
-            "created_at": farmer.created_at
+            "id": farmer["id"],
+            "name": farmer["name"],
+            "email": farmer["email"],
+            "phone": farmer["phone"],
+            "language": farmer["language"],
+            "role": farmer["role"],  # ← ADD ROLE
+            "is_verified": farmer["is_verified"],
+            "created_at": farmer["created_at"]
         }
     )

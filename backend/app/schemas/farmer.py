@@ -10,6 +10,7 @@ class FarmerRegister(BaseModel):
     phone: str = Field(..., min_length=13, max_length=13)
     password: str = Field(..., min_length=6)
     language: str = Field(default="am")
+    role: str = Field(default="farmer")  # ← ADD THIS
     
     @field_validator('phone')
     def validate_ethiopian_phone(cls, v):
@@ -22,6 +23,12 @@ class FarmerRegister(BaseModel):
         if v not in ['am', 'om', 'ti', 'en']:
             raise ValueError('Language must be am, om, ti, or en')
         return v
+    
+    @field_validator('role')
+    def validate_role(cls, v):
+        if v not in ['farmer', 'processor', 'consumer', 'admin']:
+            raise ValueError('Role must be farmer, processor, consumer, or admin')
+        return v
 
 class FarmerLogin(BaseModel):
     email: EmailStr
@@ -33,6 +40,7 @@ class FarmerResponse(BaseModel):
     email: str
     phone: str
     language: str
+    role: str  # ← ADD THIS
     is_verified: bool
     created_at: datetime
     
