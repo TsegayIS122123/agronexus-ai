@@ -4,9 +4,20 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  language: string;
+  role: string;
+  created_at: string;
+}
+
 export default function FarmerDashboard() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -17,7 +28,19 @@ export default function FarmerDashboard() {
       return;
     }
     
-    setUser(JSON.parse(userData));
+    try {
+      const parsed = JSON.parse(userData);
+      setUser(parsed);
+      
+      // Redirect if wrong role
+      if (parsed.role && parsed.role !== 'farmer') {
+        router.push(`/${parsed.role}/dashboard`);
+      }
+    } catch (e) {
+      router.push('/auth/login');
+    } finally {
+      setLoading(false);
+    }
   }, [router]);
 
   const handleLogout = () => {
@@ -26,48 +49,75 @@ export default function FarmerDashboard() {
     router.push('/');
   };
 
-  if (!user) {
+  if (loading) {
     return (
       <div className="flex justify-center items-center h-screen">
         <div className="text-center">
-          <div className="text-2xl mb-2">🌾</div>
-          <p className="text-gray-600">Loading...</p>
+          <div className="text-4xl mb-4">🌾</div>
+          <p className="text-gray-600">Loading your dashboard...</p>
         </div>
       </div>
     );
   }
 
+  if (!user) return null;
+
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Navigation */}
-      <nav className="bg-white shadow-sm sticky top-0 z-50">
+      {/* ========== DASHBOARD HEADER ========== */}
+      <header className="bg-green-900 shadow-lg sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-2">
               <span className="text-2xl">🌾</span>
-              <h1 className="text-xl font-bold text-green-700">AgroNexus AI</h1>
+              <h1 className="text-xl font-bold text-white">AgroNexus AI</h1>
+              <span className="ml-2 text-xs bg-green-700 text-green-100 px-2 py-1 rounded">Farmer</span>
             </div>
             <div className="flex items-center space-x-4">
-              <span className="text-gray-700">Welcome, {user.name}</span>
-              <button onClick={handleLogout} className="text-red-600 hover:text-red-700 transition">
+              <span className="text-white text-sm hidden md:block">Welcome, {user.name}</span>
+              <button
+                onClick={handleLogout}
+                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition text-sm font-medium"
+              >
                 Logout
               </button>
             </div>
           </div>
         </div>
-      </nav>
+      </header>
 
-      {/* Dashboard Content */}
+      {/* ========== DASHBOARD CONTENT ========== */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Welcome Section */}
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-gray-900">Farmer Dashboard</h2>
           <p className="text-gray-600">Your AI-powered farming assistant</p>
         </div>
 
+        {/* Quick Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <div className="bg-white p-4 rounded-lg shadow">
+            <div className="text-2xl font-bold text-green-600">12</div>
+            <div className="text-sm text-gray-600">Active Crops</div>
+          </div>
+          <div className="bg-white p-4 rounded-lg shadow">
+            <div className="text-2xl font-bold text-green-600">5</div>
+            <div className="text-sm text-gray-600">Detections This Month</div>
+          </div>
+          <div className="bg-white p-4 rounded-lg shadow">
+            <div className="text-2xl font-bold text-green-600">₿ 45K</div>
+            <div className="text-sm text-gray-600">Estimated Revenue</div>
+          </div>
+          <div className="bg-white p-4 rounded-lg shadow">
+            <div className="text-2xl font-bold text-green-600">95%</div>
+            <div className="text-sm text-gray-600">Crop Health</div>
+          </div>
+        </div>
+
+        {/* Feature Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Disease Detection Card - NOW ACTIVE */}
           <Link href="/farmer/disease" className="block">
-            <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition hover:scale-105 cursor-pointer">
+            <div className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition hover:scale-105 cursor-pointer">
               <div className="text-4xl mb-4">🔬</div>
               <h3 className="text-xl font-semibold mb-2">Disease Detection</h3>
               <p className="text-gray-600 mb-4">Upload crop photo for instant AI diagnosis</p>
@@ -75,8 +125,7 @@ export default function FarmerDashboard() {
             </div>
           </Link>
 
-          {/* AI Assistant Card */}
-          <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition">
+          <div className="bg-white p-6 rounded-lg shadow">
             <div className="text-4xl mb-4">💬</div>
             <h3 className="text-xl font-semibold mb-2">AI Assistant</h3>
             <p className="text-gray-600 mb-4">Get farming advice in your language</p>
@@ -85,8 +134,7 @@ export default function FarmerDashboard() {
             </button>
           </div>
 
-          {/* Price Prediction Card */}
-          <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition">
+          <div className="bg-white p-6 rounded-lg shadow">
             <div className="text-4xl mb-4">📈</div>
             <h3 className="text-xl font-semibold mb-2">Price Prediction</h3>
             <p className="text-gray-600 mb-4">Know best time to sell your crops</p>
@@ -96,15 +144,16 @@ export default function FarmerDashboard() {
           </div>
         </div>
 
-        {/* User Info Section */}
-        <div className="mt-8 bg-white rounded-lg shadow-md p-6">
+        {/* Profile Section */}
+        <div className="mt-8 bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-semibold mb-4">Your Profile</h3>
-          <div className="space-y-2 text-gray-600">
-            <p><strong>Name:</strong> {user.name}</p>
-            <p><strong>Email:</strong> {user.email}</p>
-            <p><strong>Phone:</strong> {user.phone}</p>
-            <p><strong>Language:</strong> {user.language}</p>
-            <p><strong>Member since:</strong> {new Date(user.created_at).toLocaleDateString()}</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-600">
+            <div><strong>Name:</strong> {user.name}</div>
+            <div><strong>Email:</strong> {user.email}</div>
+            <div><strong>Phone:</strong> {user.phone}</div>
+            <div><strong>Language:</strong> {user.language}</div>
+            <div><strong>Role:</strong> {user.role}</div>
+            <div><strong>Member since:</strong> {new Date(user.created_at).toLocaleDateString()}</div>
           </div>
         </div>
       </main>

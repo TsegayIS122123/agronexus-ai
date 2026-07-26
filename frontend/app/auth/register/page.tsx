@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import axios from 'axios';
 
 export default function Register() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -15,8 +16,17 @@ export default function Register() {
     email: '',
     phone: '',
     password: '',
-    language: 'am'
+    language: 'am',
+    role: 'farmer'
   });
+
+  // Pre-select role from URL parameter
+  useEffect(() => {
+    const roleParam = searchParams.get('role');
+    if (roleParam && ['farmer', 'processor', 'consumer'].includes(roleParam)) {
+      setFormData(prev => ({ ...prev, role: roleParam }));
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,130 +34,155 @@ export default function Register() {
     setError('');
 
     try {
-      console.log('Sending registration data:', formData);
-      const response = await axios.post('/api/auth/register', formData);
-      console.log('Registration response:', response.data);
-      
+      const response = await axios.post('/api/v1/auth/register', formData);
       localStorage.setItem('token', response.data.access_token);
       localStorage.setItem('user', JSON.stringify(response.data.user));
-      router.push('/farmer/dashboard');
-    } catch (err: any) {
-      console.error('Registration error:', err);
-      console.error('Error response:', err.response?.data);
       
-      // Show detailed error message
-      const errorMsg = err.response?.data?.detail || 'Registration failed. Please try again.';
-      setError(errorMsg);
+      const role = response.data.user.role || 'farmer';
+      router.push(`/${role}/dashboard`);
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Registration failed. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
+  const roleOptions = [
+    { value: 'farmer', label: '🌾 Farmer', description: 'Grow crops, detect diseases, sell produce' },
+    { value: 'processor', label: '🏭 Processor', description: 'Process raw materials into finished goods' },
+    { value: 'consumer', label: '🛒 Consumer', description: 'Buy local Ethiopian products' },
+  ];
+
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      <div className="flex-1 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-lg shadow-lg">
-          <div className="text-center">
-            <div className="text-4xl mb-2">🌾</div>
-            <h2 className="text-3xl font-bold text-gray-900">Create Account</h2>
-            <p className="mt-2 text-gray-600">Join AgroNexus AI as a Farmer</p>
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
+        <div className="text-center">
+          <div className="text-4xl mb-2">🌾</div>
+          <h2 className="text-3xl font-bold text-gray-900">Create Account</h2>
+          <p className="mt-2 text-gray-600">Join AgroNexus AI and transform agriculture</p>
+        </div>
+
+        {error && (
+          <div className="mt-4 bg-red-50 border border-red-200 text-red-600 p-3 rounded-lg text-sm">
+            {error}
+          </div>
+        )}
+
+        <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
+          {/* Name */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Full Name</label>
+            <input
+              type="text"
+              required
+              className="mt-1 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              placeholder="Enter your full name"
+              value={formData.name}
+              onChange={(e) => setFormData({...formData, name: e.target.value})}
+            />
           </div>
 
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-600 p-3 rounded-lg text-sm">
-              {error}
-            </div>
-          )}
+          {/* Email */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Email Address</label>
+            <input
+              type="email"
+              required
+              className="mt-1 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              placeholder="you@example.com"
+              value={formData.email}
+              onChange={(e) => setFormData({...formData, email: e.target.value})}
+            />
+          </div>
 
-          <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+          {/* Phone */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Phone Number</label>
+            <input
+              type="tel"
+              required
+              className="mt-1 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              placeholder="+2519XXXXXXXX"
+              value={formData.phone}
+              onChange={(e) => setFormData({...formData, phone: e.target.value})}
+            />
+            <p className="text-xs text-gray-500 mt-1">Format: +251 followed by 9 digits</p>
+          </div>
+
+          {/* Password */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Password</label>
+            <div className="relative">
               <input
-                type="text"
+                type={showPassword ? "text" : "password"}
                 required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                placeholder="Enter your full name"
-                value={formData.name}
-                onChange={(e) => setFormData({...formData, name: e.target.value})}
+                className="mt-1 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent pr-10"
+                placeholder="Minimum 6 characters"
+                value={formData.password}
+                onChange={(e) => setFormData({...formData, password: e.target.value})}
               />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
-              <input
-                type="email"
-                required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                placeholder="you@example.com"
-                value={formData.email}
-                onChange={(e) => setFormData({...formData, email: e.target.value})}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
-              <input
-                type="tel"
-                required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                placeholder="+2519XXXXXXXX"
-                value={formData.phone}
-                onChange={(e) => setFormData({...formData, phone: e.target.value})}
-              />
-              <p className="text-xs text-gray-500 mt-1">Format: +251 followed by 9 digits</p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 pr-10"
-                  placeholder="Minimum 6 characters"
-                  value={formData.password}
-                  onChange={(e) => setFormData({...formData, password: e.target.value})}
-                />
-                <button
-                  type="button"
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                  onClick={() => setShowPassword(!showPassword)}
-                >
-                  {showPassword ? '👁️' : '👁️‍🗨️'}
-                </button>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Preferred Language</label>
-              <select
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                value={formData.language}
-                onChange={(e) => setFormData({...formData, language: e.target.value})}
+              <button
+                type="button"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                onClick={() => setShowPassword(!showPassword)}
               >
-                <option value="am">አማርኛ (Amharic)</option>
-                <option value="om">Oromoo (Oromo)</option>
-                <option value="ti">ትግርኛ (Tigrinya)</option>
-                <option value="en">English</option>
-              </select>
+                {showPassword ? '👁️' : '👁️‍🗨️'}
+              </button>
             </div>
+          </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition disabled:opacity-50"
+          {/* Role Selection - Interactive Cards */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">I am a...</label>
+            <div className="grid grid-cols-1 gap-3">
+              {roleOptions.map((role) => (
+                <button
+                  key={role.value}
+                  type="button"
+                  onClick={() => setFormData({...formData, role: role.value})}
+                  className={`p-4 border-2 rounded-lg text-left transition-all ${
+                    formData.role === role.value
+                      ? 'border-green-600 bg-green-50 ring-2 ring-green-600'
+                      : 'border-gray-200 hover:border-green-300'
+                  }`}
+                >
+                  <div className="font-medium text-gray-900">{role.label}</div>
+                  <div className="text-sm text-gray-500">{role.description}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Language */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Preferred Language</label>
+            <select
+              className="mt-1 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              value={formData.language}
+              onChange={(e) => setFormData({...formData, language: e.target.value})}
             >
-              {loading ? 'Creating account...' : 'Create Account'}
-            </button>
+              <option value="am">አማርኛ (Amharic)</option>
+              <option value="om">Oromoo (Oromo)</option>
+              <option value="ti">ትግርኛ (Tigrinya)</option>
+              <option value="en">English</option>
+            </select>
+          </div>
 
-            <p className="text-center text-sm text-gray-600">
-              Already have an account?{' '}
-              <Link href="/auth/login" className="text-green-600 hover:text-green-700 font-medium">
-                Sign in
-              </Link>
-            </p>
-          </form>
-        </div>
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition disabled:opacity-50 text-lg font-medium"
+          >
+            {loading ? 'Creating account...' : 'Create Account'}
+          </button>
+
+          <p className="text-center text-sm text-gray-600">
+            Already have an account?{' '}
+            <Link href="/auth/login" className="text-green-600 hover:text-green-700 font-medium">
+              Sign in
+            </Link>
+          </p>
+        </form>
       </div>
     </div>
   );

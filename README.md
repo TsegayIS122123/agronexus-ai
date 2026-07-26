@@ -251,57 +251,60 @@ flowchart TB
 
 ```mermaid
 erDiagram
-    Farmers ||--o{ Crops : grows
-    Farmers ||--o{ DiseaseDetections : has
-    Farmers ||--o{ ChatHistory : has
-    Farmers ||--o{ MarketListings : creates
-    Farmers ||--o{ Orders : places
-    Farmers ||--o{ Cooperatives : joins
+    Users ||--o{ FarmerProfiles : has
+    Users ||--o{ ProcessorProfiles : has
+    Users ||--o{ ConsumerProfiles : has
+    Users ||--o{ DiseaseDetections : has
+    Users ||--o{ ChatHistory : has
     
-    Processors ||--o{ MarketListings : creates
-    Processors ||--o{ Orders : receives
-    Processors ||--o{ Products : manufactures
+    FarmerProfiles ||--o{ Crops : grows
+    ProcessorProfiles ||--o{ MarketListings : creates
+    ProcessorProfiles ||--o{ Products : manufactures
     
     Crops ||--o{ PriceHistory : has
     Crops ||--o{ DiseaseDetections : has
     Crops ||--o{ Predictions : has
     
-    Cooperatives ||--o{ Farmers : has
-    
     MarketListings ||--o{ Orders : contains
     Orders ||--o{ Payments : has
-    
     Products ||--o{ QualityReports : has
     
-    Farmers {
+    Users {
         uuid id PK
         string name
         string email
         string phone
         string password_hash
+        user_role role ENUM
         string language
-        geometry location
-        decimal farm_size
-        jsonb crops
-        uuid cooperative_id FK
         boolean is_verified
         timestamp created_at
         timestamp updated_at
     }
     
-    Processors {
-        uuid id PK
-        string name
-        string type
-        decimal capacity
-        decimal current_load
-        array crops_accepted
-        array services
-        decimal price_per_kg
+    FarmerProfiles {
+        uuid user_id PK FK
+        decimal farm_size
         geometry location
-        string energy_source
-        integer jobs_created
+        jsonb crops
+        uuid cooperative_id
+        timestamp created_at
+    }
+    
+    ProcessorProfiles {
+        uuid user_id PK FK
+        string company_name
+        decimal capacity
+        array crops_accepted
+        geometry location
         boolean verified
+        timestamp created_at
+    }
+    
+    ConsumerProfiles {
+        uuid user_id PK FK
+        text address
+        jsonb payment_methods
         timestamp created_at
     }
     
@@ -319,7 +322,7 @@ erDiagram
     
     DiseaseDetections {
         uuid id PK
-        uuid farmer_id FK
+        uuid user_id FK
         uuid crop_id FK
         text image_url
         string disease_name
@@ -339,73 +342,7 @@ erDiagram
         decimal price
         string market
     }
-    
-    MarketListings {
-        uuid id PK
-        uuid farmer_id FK
-        uuid processor_id FK
-        uuid crop_id FK
-        decimal quantity
-        decimal price
-        string quality_grade
-        string status
-        timestamp created_at
-    }
-    
-    Orders {
-        uuid id PK
-        uuid listing_id FK
-        uuid buyer_id FK
-        decimal quantity
-        decimal total_price
-        string status
-        timestamp created_at
-    }
-    
-    ChatHistory {
-        uuid id PK
-        uuid farmer_id FK
-        text query
-        text response
-        string language
-        timestamp created_at
-    }
-    
-    Predictions {
-        uuid id PK
-        uuid crop_id FK
-        decimal predicted_price
-        decimal confidence_lower
-        decimal confidence_upper
-        date forecast_date
-        timestamp created_at
-    }
-    
-    Products {
-        uuid id PK
-        uuid processor_id FK
-        string name
-        text description
-        string category
-        decimal price
-        integer stock
-        string quality_grade
-        array images
-        timestamp created_at
-    }
 ```
----
-
-## ✨ **Features**
-
-### 🌾 **Farmer Zone**
-
-#### **1. Crop Disease Detection**
-- **What it does**: Upload a photo of any crop → Instant AI diagnosis → Treatment recommendations
-- **Technology**: YOLOv8 + PyTorch
-- **Languages**: Amharic, Oromo, Tigrinya, English
-- **Accuracy Target**: 85%+ mAP
-- **Why it matters**: Farmers can detect diseases before they destroy entire harvests
 ### **Request Flow: Disease Detection**
 
 ```mermaid
@@ -432,12 +369,6 @@ sequenceDiagram
     Gateway-->>Frontend: Complete Response
     Frontend-->>Farmer: Display Diagnosis
 ```
-
-#### **2. AI Farming Assistant**
-- **What it does**: Ask any farming question in your language → Contextual AI response with sources
-- **Technology**: LangChain + RAG + Gemini
-- **Knowledge Base**: Agricultural manuals, research papers, expert guidelines
-- **Why it matters**: Every farmer gets expert advice, regardless of location
 ### **Request Flow: AI Chat Assistant**
 
 ```mermaid
@@ -464,80 +395,42 @@ sequenceDiagram
     Frontend-->>Farmer: Display
 ```
 
-#### **3. Price Forecasting**
-- **What it does**: Get 30-day price forecasts for 50+ crops → Know when to sell for maximum profit
-- **Technology**: Prophet + LSTM ensemble
-- **Accuracy**: MAPE < 15%
-- **Why it matters**: Farmers can time their sales for maximum income
+---
 
-#### **4. Weather Intelligence**
-- **What it does**: Hyperlocal 5-day weather forecasts → Planting and harvesting guidance
-- **Technology**: OpenWeather API
-- **Features**: Temperature, rainfall, wind speed, humidity
-- **Why it matters**: Farmers can plan activities around weather patterns
+## ✨ **Features**
 
-#### **5. Cooperative Formation**
-- **What it does**: Connect with nearby farmers → Form buying/selling cooperatives automatically
-- **Technology**: Recommendation Engine
-- **Why it matters**: Collective bargaining power increases farmer income
+### 🌾 **Farmer Zone**
+
+| Feature | Description | Technology | 
+|---------|-------------|------------|
+| **Disease Detection** | Upload crop photo → Instant diagnosis → Treatment | YOLOv8 + PyTorch |
+| **AI Assistant** | 24/7 farming advice in local languages | LangChain + RAG + Gemini | 
+| **Price Prediction** | 30-day forecasts with confidence intervals | Prophet + LSTM | 
+| **Weather Alerts** | Hyperlocal 5-day weather forecasts | OpenWeather API | 
+| **Cooperative Hub** | Connect with nearby farmers automatically | Recommendation Engine | 
+| **Quality Grading** | Automatic crop grading for export | Computer Vision | 
 
 ### ⚙️ **Industry Zone**
 
-#### **6. Factory Feasibility Advisor**
-- **What it does**: Enter crop type, quantity, location, capital → Get feasibility score, ROI estimate
-- **Technology**: Decision Engine
-- **Products**: 20+ processed products (flour, oil, juice, etc.)
-- **Why it matters**: Entrepreneurs can confidently start processing businesses
-
-#### **7. Equipment Marketplace**
-- **What it does**: List or find equipment → Match buyers with sellers automatically
-- **Technology**: Marketplace Platform
-- **Why it matters**: Local equipment becomes accessible and affordable
-
-#### **8. Quality Control AI**
-- **What it does**: Upload product images → Automatic grading to export standards
-- **Technology**: Computer Vision
-- **Standards**: Ethiopian Standards Agency + International Export Standards
-- **Why it matters**: Ethiopian products can meet export quality requirements
-
-#### **9. Processing Guidelines**
-- **What it does**: Step-by-step video/text guides in local languages → Best practices
-- **Technology**: RAG + CMS
-- **Why it matters**: Knowledge transfer to new processors
-
-#### **10. Cost Calculator**
-- **What it does**: Calculate manufacturing costs → ROI analysis
-- **Technology**: Python + Pandas
-- **Why it matters**: Informed business decisions
+| Feature | Description | Technology | 
+|---------|-------------|------------|
+| **Factory Feasibility** | Assess crop-to-product manufacturing viability | Decision Engine | 
+| **Equipment Sourcing** | Connect buyers with local equipment sellers | Marketplace Platform | 
+| **Quality Control AI** | Automated export-standard product grading | Computer Vision | 
+| **Processing Guides** | Step-by-step guides in local languages | RAG + CMS | 
+| **Cost Calculator** | Manufacturing cost and ROI analysis | Python + Pandas | 
+| **Energy Optimization** | Solar/biofuel recommendations | Optimization Algorithms | 
 
 ### 🤝 **Market Zone**
 
-#### **11. B2B Marketplace**
-- **What it does**: Farmers list products → Processors find and buy directly
-- **Technology**: Next.js + PostgreSQL + WebSockets
-- **Features**: Listings, search, chat, payments
-- **Why it matters**: Middlemen are eliminated, farmers get better prices
-
-#### **12. Local Product Catalog**
-- **What it does**: Discover and buy Ethiopian-made products
-- **Technology**: E-commerce Platform
-- **Why it matters**: Support local manufacturing
-
-#### **13. Export Documentation**
-- **What it does**: Auto-fill export forms → AI-assisted certification
-- **Technology**: Document AI
-- **Why it matters**: Reduce export barriers
-
-#### **14. Impact Tracker**
-- **What it does**: Real-time dashboards showing economic impact
-- **Technology**: Recharts + D3.js
-- **Metrics**: Jobs created, income increase, import substitution
-- **Why it matters**: Evidence-based policy making
-
-#### **15. Consumer Portal**
-- **What it does**: Buy local products online → Works offline
-- **Technology**: PWA + Offline-first
-- **Why it matters**: Connect consumers directly to producers
+| Feature | Description | Technology | Status |
+|---------|-------------|------------|--------|
+| **B2B Marketplace** | Direct farmer-to-processor connections | Next.js + PostgreSQL | 
+| **Product Catalog** | Discover Ethiopian-made products | E-commerce Platform | 
+| **Export Documentation** | Auto-fill export forms and certifications | Document AI | 
+| **Impact Tracker** | Real-time economic impact visualization | Recharts + D3.js | 
+| **Consumer Portal** | Buy local products, works offline | PWA + Offline-first | 
+| **Price Comparison** | Compare local vs imported prices | Web Scraping + ML | 
 
 ---
 
@@ -613,129 +506,72 @@ agronexus-ai/
 │   │   ├── database.py              # Database connection & session
 │   │   ├── models/                  # SQLAlchemy ORM models
 │   │   │   ├── __init__.py
-│   │   │   ├── farmer.py            # Farmer user model
-│   │   │   ├── disease.py           # Disease detection model
-│   │   │   ├── industry.py          # Industry/Processor model
-│   │   │   ├── marketplace.py       # Marketplace listings model
-│   │   │   ├── order.py             # Order model
-│   │   │   ├── product.py           # Product model
-│   │   │   ├── prediction.py        # Price prediction model
-│   │   │   └── chat.py              # Chat history model
+│   │   │   ├── user.py              # Unified user model with role
+│   │   │   ├── farmer_profile.py    # Farmer-specific data
+│   │   │   ├── processor_profile.py # Processor-specific data
+│   │   │   ├── consumer_profile.py  # Consumer-specific data
+│   │   │   └── disease.py
 │   │   ├── schemas/                 # Pydantic schemas
 │   │   │   ├── __init__.py
-│   │   │   ├── farmer.py
-│   │   │   ├── industry.py
-│   │   │   ├── marketplace.py
-│   │   │   └── prediction.py
+│   │   │   └── auth.py
 │   │   ├── routes/                  # API endpoints
 │   │   │   ├── __init__.py
 │   │   │   ├── auth.py
 │   │   │   ├── disease.py
-│   │   │   ├── industry.py
-│   │   │   ├── marketplace.py
-│   │   │   ├── prediction.py
-│   │   │   ├── chat.py
-│   │   │   └── analytics.py
+│   │   │   └── role_guard.py
 │   │   ├── services/                # Business logic layer
 │   │   │   ├── __init__.py
 │   │   │   ├── auth_service.py
 │   │   │   ├── disease_service.py
-│   │   │   ├── industry_service.py
-│   │   │   ├── marketplace_service.py
-│   │   │   ├── prediction_service.py
-│   │   │   ├── chat_service.py
-│   │   │   ├── analytics_service.py
 │   │   │   └── disease/
 │   │   │       └── detector.py      # YOLOv8 model loader
-│   │   └── utils/                   # Utility functions
-│   │       ├── __init__.py
-│   │       ├── helpers.py
-│   │       └── validators.py
+│   │   └── utils/
+│   │       └── __init__.py
 │   ├── models/                      # Trained ML models
-│   │   ├── disease_detection.pt     # YOLOv8 trained weights
-│   │   ├── price_forecast.pkl       # Prophet model
-│   │   ├── recommendation.pkl       # Recommendation engine
-│   │   └── quality_grading.pt       # Quality control model
-│   ├── pipelines/                   # AI pipelines
-│   │   ├── training/
-│   │   │   ├── disease_train.py
-│   │   │   ├── forecast_train.py
-│   │   │   └── quality_train.py
-│   │   └── inference/
-│   │       ├── disease_inference.py
-│   │       └── forecast_inference.py
+│   │   └── disease_detection.pt
 │   ├── requirements.txt
 │   ├── Dockerfile
 │   └── .env
 │
 ├── frontend/                         # 🎨 Next.js Application
 │   ├── app/
-│   │   ├── layout.tsx
-│   │   ├── page.tsx                 # Homepage
-│   │   ├── globals.css
-│   │   ├── auth/
-│   │   │   ├── login/
-│   │   │   │   └── page.tsx
-│   │   │   └── register/
-│   │   │       └── page.tsx
-│   │   ├── farmer/                  # 🌾 Farmer Zone
-│   │   │   ├── dashboard/
-│   │   │   │   └── page.tsx
-│   │   │   ├── disease/
-│   │   │   │   └── page.tsx
-│   │   │   ├── chat/
-│   │   │   │   └── page.tsx
-│   │   │   ├── prices/
-│   │   │   │   └── page.tsx
-│   │   │   ├── weather/
-│   │   │   │   └── page.tsx
-│   │   │   └── cooperative/
-│   │   │       └── page.tsx
-│   │   ├── industry/                # ⚙️ Industry Zone
-│   │   │   ├── dashboard/
-│   │   │   │   └── page.tsx
-│   │   │   ├── feasibility/
-│   │   │   │   └── page.tsx
-│   │   │   ├── equipment/
-│   │   │   │   └── page.tsx
-│   │   │   ├── quality/
-│   │   │   │   └── page.tsx
-│   │   │   └── cost-calculator/
-│   │   │       └── page.tsx
-│   │   ├── market/                  # 🤝 Market Zone
-│   │   │   ├── marketplace/
-│   │   │   │   └── page.tsx
-│   │   │   ├── products/
-│   │   │   │   └── page.tsx
-│   │   │   ├── export/
-│   │   │   │   └── page.tsx
-│   │   │   ├── impact/
-│   │   │   │   └── page.tsx
+│   │   ├── (public)/                # Public website (no auth)
+│   │   │   ├── page.tsx             # Landing page
+│   │   │   ├── solutions/
+│   │   │   ├── about/
+│   │   │   └── layout.tsx
+│   │   ├── (auth)/                  # Auth pages
+│   │   │   ├── login/page.tsx
+│   │   │   └── register/page.tsx
+│   │   ├── (dashboard)/             # Protected portal
+│   │   │   ├── layout.tsx           # Dashboard layout
+│   │   │   ├── farmer/
+│   │   │   │   ├── page.tsx         # Farmer dashboard
+│   │   │   │   ├── disease/
+│   │   │   │   ├── chat/
+│   │   │   │   └── prices/
+│   │   │   ├── processor/
+│   │   │   │   ├── page.tsx
+│   │   │   │   └── procurement/
 │   │   │   └── consumer/
-│   │   │       └── page.tsx
-│   │   ├── admin/                   # 🔐 Admin Panel
-│   │   │   ├── dashboard/
-│   │   │   │   └── page.tsx
-│   │   │   ├── users/
-│   │   │   │   └── page.tsx
-│   │   │   └── reports/
-│   │   │       └── page.tsx
-│   │   └── components/
-│   │       ├── Navbar.tsx
-│   │       ├── Footer.tsx
-│   │       ├── DiseaseCard.tsx
-│   │       ├── PriceChart.tsx
-│   │       ├── MarketplaceCard.tsx
-│   │       └── shared/
-│   ├── lib/
-│   │   ├── api/
+│   │   │       ├── page.tsx
+│   │   │       └── marketplace/
+│   │   ├── components/
+│   │   │   ├── Public/
+│   │   │   │   ├── Header.tsx
+│   │   │   │   └── Footer.tsx
+│   │   │   ├── Dashboard/
+│   │   │   │   ├── DashboardLayout.tsx
+│   │   │   │   ├── Sidebar.tsx
+│   │   │   │   └── BottomNav.tsx
+│   │   │   └── RoleBased/
+│   │   │       ├── FarmerNav.tsx
+│   │   │       ├── ProcessorNav.tsx
+│   │   │       └── ConsumerNav.tsx
+│   │   ├── lib/
 │   │   │   ├── auth.ts
-│   │   │   ├── disease.ts
-│   │   │   ├── industry.ts
-│   │   │   └── marketplace.ts
-│   │   ├── hooks/
-│   │   ├── utils/
-│   │   └── types/
+│   │   │   └── roles.ts
+│   │   └── middleware.ts
 │   ├── package.json
 │   ├── next.config.js
 │   ├── tailwind.config.js
@@ -745,7 +581,7 @@ agronexus-ai/
 │
 ├── data/                             # 📊 Dataset (gitignored)
 │   └── dataset/
-│       ├── disease/                 # Disease detection dataset
+│       ├── disease/
 │       │   ├── images/
 │       │   │   ├── train/
 │       │   │   ├── val/
@@ -754,11 +590,9 @@ agronexus-ai/
 │       │       ├── train/
 │       │       ├── val/
 │       │       └── test/
-│       ├── quality/                 # Quality control dataset
-│       │   └── images/
-│       ├── prices/                  # Price history data
+│       ├── prices/
 │       │   └── historical.csv
-│       └── knowledge/               # Knowledge base for RAG
+│       └── knowledge/
 │           ├── manuals/
 │           ├── research/
 │           └── guidelines/
@@ -766,23 +600,13 @@ agronexus-ai/
 ├── docs/                             # 📚 Documentation
 │   ├── architecture/
 │   │   ├── system-overview.md
-│   │   ├── farmer-zone.md
-│   │   ├── industry-zone.md
-│   │   ├── market-zone.md
-│   │   ├── ai-engine.md
 │   │   └── database.md
 │   ├── api/
 │   │   ├── authentication.md
-│   │   ├── endpoints.md
-│   │   ├── farmer-api.md
-│   │   ├── industry-api.md
-│   │   └── market-api.md
+│   │   └── endpoints.md
 │   ├── ai/
 │   │   ├── disease-detection.md
-│   │   ├── rag-chatbot.md
-│   │   ├── forecasting.md
-│   │   ├── recommendation.md
-│   │   └── quality-control.md
+│   │   └── rag-chatbot.md
 │   └── deployment/
 │       ├── docker.md
 │       └── production.md
@@ -821,16 +645,6 @@ PostgreSQL 16+ (or use Docker)
 git clone https://github.com/TsegayIS122123/agronexus-ai.git
 cd agronexus-ai
 
-# Copy environment variables
-cp .env.example .env
-
-# Edit .env with your values
-# DATABASE_URL=postgresql://user:password@localhost:5432/agronexus
-# SECRET_KEY=your-secret-key-minimum-32-characters
-# GEMINI_API_KEY=your-google-ai-key
-# OPENWEATHER_API_KEY=your-weather-api-key
-```
-
 ### **Start Services**
 
 ```bash
@@ -852,14 +666,6 @@ source .venv/bin/activate  # Windows: .venv\Scripts\activate
 
 # Install dependencies
 pip install -r requirements.txt
-
-# Create database tables
-python -c "
-from app.database import engine
-from app.models import Base
-Base.metadata.create_all(bind=engine)
-print('✅ Database tables created!')
-"
 
 # Start development server
 python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
@@ -900,12 +706,12 @@ open http://localhost:3000
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `POST` | `/api/v1/auth/register` | Register new farmer |
+| `POST` | `/api/v1/auth/register` | Register new user |
 | `POST` | `/api/v1/auth/login` | Login to existing account |
 | `POST` | `/api/v1/auth/refresh` | Refresh JWT token |
 | `POST` | `/api/v1/auth/logout` | Logout user |
 
-### **Farmer**
+### **Farmer Zone**
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
@@ -931,7 +737,7 @@ open http://localhost:3000
 | `GET` | `/api/v1/assistant/history` | Get chat history |
 | `POST` | `/api/v1/assistant/voice` | Voice query input |
 
-### **Market**
+### **Market Zone**
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
@@ -939,15 +745,8 @@ open http://localhost:3000
 | `GET` | `/api/v1/prices/forecast/{crop_id}` | Get price forecast |
 | `GET` | `/api/v1/weather/current/{location}` | Get current weather |
 | `GET` | `/api/v1/weather/forecast/{location}` | Get weather forecast |
-
-### **Marketplace**
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
 | `GET` | `/api/v1/market/products` | List products |
 | `POST` | `/api/v1/market/listings` | Create listing |
-| `GET` | `/api/v1/market/orders` | Get orders |
-| `POST` | `/api/v1/market/negotiate` | Negotiate price |
 
 ---
 
@@ -1059,7 +858,7 @@ docker build -t agronexus-frontend ./frontend
 
 ## 🗺️ **Roadmap**
 
-### **Phase 1: MVP (Current)**
+### **Phase 1: MVP**
 
 ```
 ✅ Authentication (JWT)
