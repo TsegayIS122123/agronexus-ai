@@ -136,14 +136,14 @@ export default function FarmerDashboard() {
             </button>
           </div>
 
-          <div className="bg-white p-6 rounded-lg shadow">
-            <div className="text-4xl mb-4">📈</div>
-            <h3 className="text-xl font-semibold mb-2">Price Prediction</h3>
-            <p className="text-gray-600 mb-4">Know best time to sell your crops</p>
-            <button disabled className="text-green-600 font-medium opacity-50 cursor-not-allowed">
-              Coming Soon →
-            </button>
-          </div>
+          <Link href="/farmer/prices" className="block">
+            <div className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition hover:scale-105 cursor-pointer">
+              <div className="text-4xl mb-4">📈</div>
+              <h3 className="text-xl font-semibold mb-2">Price Prediction</h3>
+              <p className="text-gray-600 mb-4">Know best time to sell your crops</p>
+              <span className="text-green-600 font-medium">View Forecast →</span>
+            </div>
+          </Link>
         </div>
 
         {/* Profile Section */}

@@ -1,2 +1,1 @@
-from app.routes import auth
-from app.routes import disease
+from app.routes import auth, disease, prices
