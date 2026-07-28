@@ -19,6 +19,11 @@ export default function Home() {
   const [userRole, setUserRole] = useState('farmer');
 
   useEffect(() => {
+    const clearAuthCookies = () => {
+      document.cookie = 'access_token=; path=/; max-age=0; SameSite=Lax';
+      document.cookie = 'user_role=; path=/; max-age=0; SameSite=Lax';
+    };
+
     const checkAuth = () => {
       const token = localStorage.getItem('token');
       const userData = localStorage.getItem('user');
@@ -33,6 +38,7 @@ export default function Home() {
         }
       } else {
         setIsLoggedIn(false);
+        clearAuthCookies();
       }
     };
 

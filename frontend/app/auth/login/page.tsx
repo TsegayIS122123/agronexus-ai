@@ -36,8 +36,8 @@ export default function Login() {
       
       localStorage.setItem('token', response.data.access_token);
       localStorage.setItem('user', JSON.stringify(response.data.user));
-      document.cookie = `access_token=${encodeURIComponent(response.data.access_token)}; path=/`;
-      document.cookie = `user_role=${encodeURIComponent(response.data.user.role || 'farmer')}; path=/`;
+      document.cookie = `access_token=${encodeURIComponent(response.data.access_token)}; path=/; SameSite=Lax`;
+      document.cookie = `user_role=${encodeURIComponent(response.data.user.role || 'farmer')}; path=/; SameSite=Lax`;
       
       const role = response.data.user.role || 'farmer';
       router.push(`/${role}/dashboard`);

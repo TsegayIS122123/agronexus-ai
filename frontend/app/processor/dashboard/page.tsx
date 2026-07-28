@@ -44,6 +44,8 @@ export default function ProcessorDashboard() {
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    document.cookie = 'access_token=; path=/; max-age=0; SameSite=Lax';
+    document.cookie = 'user_role=; path=/; max-age=0; SameSite=Lax';
     router.push('/');
   };
 
