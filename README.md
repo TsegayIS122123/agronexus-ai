@@ -268,7 +268,7 @@ erDiagram
     MarketListings ||--o{ Orders : contains
     Orders ||--o{ Payments : has
     Products ||--o{ QualityReports : has
-    
+
     Users {
         uuid id PK
         string name
@@ -281,7 +281,7 @@ erDiagram
         timestamp created_at
         timestamp updated_at
     }
-    
+
     FarmerProfiles {
         uuid user_id PK FK
         decimal farm_size
@@ -290,7 +290,7 @@ erDiagram
         uuid cooperative_id
         timestamp created_at
     }
-    
+
     ProcessorProfiles {
         uuid user_id PK FK
         string company_name
@@ -300,14 +300,14 @@ erDiagram
         boolean verified
         timestamp created_at
     }
-    
+
     ConsumerProfiles {
         uuid user_id PK FK
         text address
         jsonb payment_methods
         timestamp created_at
     }
-    
+
     Crops {
         uuid id PK
         string name
@@ -319,7 +319,7 @@ erDiagram
         array disease_tags
         timestamp created_at
     }
-    
+
     DiseaseDetections {
         uuid id PK
         uuid user_id FK
@@ -334,7 +334,7 @@ erDiagram
         jsonb recommendations
         timestamp created_at
     }
-    
+
     PriceHistory {
         timestamp time PK
         uuid crop_id FK
