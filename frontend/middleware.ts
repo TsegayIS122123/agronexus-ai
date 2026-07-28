@@ -5,6 +5,11 @@ export function middleware(request: NextRequest) {
   const token = request.cookies.get('access_token')?.value;
   const pathname = request.nextUrl.pathname;
 
+  // Allow API requests through without auth redirect
+  if (pathname.startsWith('/api')) {
+    return NextResponse.next();
+  }
+
   // Public paths (no auth needed)
   const publicPaths = ['/', '/about', '/solutions', '/contact'];
   if (publicPaths.some(path => pathname === path || pathname.startsWith('/solutions'))) {
@@ -12,7 +17,8 @@ export function middleware(request: NextRequest) {
   }
 
   // Auth paths
-  if (pathname.startsWith('/login') || pathname.startsWith('/register')) {
+  const authPaths = ['/login', '/register', '/auth/login', '/auth/register'];
+  if (authPaths.some(path => pathname === path || pathname.startsWith(path))) {
     if (token) {
       // Get role from cookie or decode from token
       const role = request.cookies.get('user_role')?.value || 'farmer';
@@ -23,7 +29,7 @@ export function middleware(request: NextRequest) {
 
   // Protected paths - require auth
   if (!token) {
-    return NextResponse.redirect(new URL('/login', request.url));
+    return NextResponse.redirect(new URL('/auth/login', request.url));
   }
 
   // Role-based path enforcement

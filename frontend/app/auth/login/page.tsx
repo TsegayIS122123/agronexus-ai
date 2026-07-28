@@ -15,6 +15,17 @@ export default function Login() {
     password: ''
   });
 
+  const formatError = (error: any) => {
+    const detail = error?.response?.data?.detail;
+    if (Array.isArray(detail)) {
+      return detail.map((item: any) => item.msg || JSON.stringify(item)).join(', ');
+    }
+    if (typeof detail === 'object' && detail !== null) {
+      return detail.message || detail.detail || JSON.stringify(detail);
+    }
+    return detail || 'Invalid email or password';
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -25,11 +36,13 @@ export default function Login() {
       
       localStorage.setItem('token', response.data.access_token);
       localStorage.setItem('user', JSON.stringify(response.data.user));
+      document.cookie = `access_token=${encodeURIComponent(response.data.access_token)}; path=/`;
+      document.cookie = `user_role=${encodeURIComponent(response.data.user.role || 'farmer')}; path=/`;
       
       const role = response.data.user.role || 'farmer';
       router.push(`/${role}/dashboard`);
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Invalid email or password');
+      setError(formatError(err));
     } finally {
       setLoading(false);
     }

@@ -28,6 +28,17 @@ export default function Register() {
     }
   }, [searchParams]);
 
+  const formatError = (error: any) => {
+    const detail = error?.response?.data?.detail;
+    if (Array.isArray(detail)) {
+      return detail.map((item: any) => item.msg || JSON.stringify(item)).join(', ');
+    }
+    if (typeof detail === 'object' && detail !== null) {
+      return JSON.stringify(detail);
+    }
+    return detail || 'Registration failed. Please try again.';
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -37,11 +48,13 @@ export default function Register() {
       const response = await axios.post('/api/v1/auth/register', formData);
       localStorage.setItem('token', response.data.access_token);
       localStorage.setItem('user', JSON.stringify(response.data.user));
+      document.cookie = `access_token=${encodeURIComponent(response.data.access_token)}; path=/`;
+      document.cookie = `user_role=${encodeURIComponent(response.data.user.role || 'farmer')}; path=/`;
       
       const role = response.data.user.role || 'farmer';
       router.push(`/${role}/dashboard`);
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Registration failed. Please try again.');
+      setError(formatError(err));
     } finally {
       setLoading(false);
     }
