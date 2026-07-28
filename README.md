@@ -256,15 +256,15 @@ erDiagram
     Users ||--o{ ConsumerProfiles : has
     Users ||--o{ DiseaseDetections : has
     Users ||--o{ ChatHistory : has
-    
+
     FarmerProfiles ||--o{ Crops : grows
     ProcessorProfiles ||--o{ MarketListings : creates
     ProcessorProfiles ||--o{ Products : manufactures
-    
+
     Crops ||--o{ PriceHistory : has
     Crops ||--o{ DiseaseDetections : has
     Crops ||--o{ Predictions : has
-    
+
     MarketListings ||--o{ Orders : contains
     Orders ||--o{ Payments : has
     Products ||--o{ QualityReports : has
@@ -275,7 +275,7 @@ erDiagram
         string email
         string phone
         string password_hash
-        user_role role ENUM
+        string role
         string language
         boolean is_verified
         timestamp created_at
@@ -283,26 +283,26 @@ erDiagram
     }
 
     FarmerProfiles {
-        uuid user_id PK FK
+        uuid user_id PK, FK
         decimal farm_size
-        geometry location
+        string location
         jsonb crops
         uuid cooperative_id
         timestamp created_at
     }
 
     ProcessorProfiles {
-        uuid user_id PK FK
+        uuid user_id PK, FK
         string company_name
         decimal capacity
-        array crops_accepted
-        geometry location
+        string_array crops_accepted
+        string location
         boolean verified
         timestamp created_at
     }
 
     ConsumerProfiles {
-        uuid user_id PK FK
+        uuid user_id PK, FK
         text address
         jsonb payment_methods
         timestamp created_at
@@ -316,7 +316,7 @@ erDiagram
         decimal min_price
         decimal max_price
         text image_url
-        array disease_tags
+        string_array disease_tags
         timestamp created_at
     }
 

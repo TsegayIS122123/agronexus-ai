@@ -21,7 +21,10 @@ class Farmer(Base):
     password_hash = Column(String(255), nullable=False)
     language = Column(String(10), default="am")
     region = Column(String(100), nullable=True)
-    role = Column(SQLEnum(UserRole), default=UserRole.FARMER)  # ← ADD THIS
+    role = Column(
+        SQLEnum(UserRole, values_callable=lambda obj: [e.value for e in obj]),  # ← KEY FIX
+        default=UserRole.FARMER
+    )
     is_verified = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())

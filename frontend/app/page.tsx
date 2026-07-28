@@ -19,17 +19,32 @@ export default function Home() {
   const [userRole, setUserRole] = useState('farmer');
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    const userData = localStorage.getItem('user');
-    if (token && userData) {
-      setIsLoggedIn(true);
-      try {
-        const user = JSON.parse(userData);
-        setUserRole(user.role || 'farmer');
-      } catch (e) {
-        setUserRole('farmer');
+    const checkAuth = () => {
+      const token = localStorage.getItem('token');
+      const userData = localStorage.getItem('user');
+      if (token && userData) {
+        setIsLoggedIn(true);
+        try {
+          const user = JSON.parse(userData);
+          const role = (user.role || 'farmer').toLowerCase();
+          setUserRole(role);
+        } catch (e) {
+          setUserRole('farmer');
+        }
+      } else {
+        setIsLoggedIn(false);
       }
-    }
+    };
+
+    // Check on mount
+    checkAuth();
+
+    // Re-check when page becomes visible again (after logout/refresh)
+    window.addEventListener('focus', checkAuth);
+
+    return () => {
+      window.removeEventListener('focus', checkAuth);
+    };
   }, []);
 
   return (

@@ -7,15 +7,16 @@ import re
 class FarmerRegister(BaseModel):
     name: str = Field(..., min_length=2, max_length=100)
     email: EmailStr
-    phone: str = Field(..., min_length=13, max_length=13)
+    phone: str = Field(..., min_length=10, max_length=13)  # ← Changed
     password: str = Field(..., min_length=6)
     language: str = Field(default="am")
-    role: str = Field(default="farmer")  # ← ADD THIS
+    role: str = Field(default="farmer")
     
     @field_validator('phone')
     def validate_ethiopian_phone(cls, v):
-        if not re.match(r'^\+251[0-9]{9}$', v):
-            raise ValueError('Phone must be in format +251XXXXXXXXX')
+        # Accept both +251XXXXXXXXX (13 chars) and 09XXXXXXXX (10 chars)
+        if not re.match(r'^(\+251[0-9]{9}|09[0-9]{8})$', v):
+            raise ValueError('Phone must be +251XXXXXXXXX or 09XXXXXXXX')
         return v
     
     @field_validator('language')
@@ -40,7 +41,7 @@ class FarmerResponse(BaseModel):
     email: str
     phone: str
     language: str
-    role: str  # ← ADD THIS
+    role: str
     is_verified: bool
     created_at: datetime
     
