@@ -3,25 +3,20 @@ from jose import jwt
 from datetime import datetime, timedelta
 import os
 from sqlalchemy.orm import Session
-from app.models.farmer import Farmer
-from app.schemas.farmer import FarmerRegister
+from app.models.user import User  # ← Changed from User
+from app.schemas.user import UserRegister  # ← Changed from UserRegister
 
 SECRET_KEY = os.getenv("SECRET_KEY", "your-super-secret-key-change-in-production")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 hours
 
 def hash_password(password: str) -> str:
-    """Hash a password using bcrypt"""
-    # Convert to bytes
     password_bytes = password.encode('utf-8')
-    # Generate salt and hash
     salt = bcrypt.gensalt()
     hashed = bcrypt.hashpw(password_bytes, salt)
-    # Return as string for database storage
     return hashed.decode('utf-8')
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verify a password against its hash"""
     try:
         plain_bytes = plain_password.encode('utf-8')
         hashed_bytes = hashed_password.encode('utf-8')
@@ -34,54 +29,53 @@ def create_access_token(data: dict):
     to_encode = data.copy()
     expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
-    
-    # Ensure role is in the token
     if "role" not in to_encode:
-        to_encode["role"] = "farmer"  # Default fallback
-    
+        to_encode["role"] = "farmer"
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
-def register_farmer(db: Session, farmer_data: FarmerRegister):
+def register_user(db: Session, user_data: UserRegister):
     # Check if email exists
-    existing_email = db.query(Farmer).filter(Farmer.email == farmer_data.email).first()
+    existing_email = db.query(User).filter(User.email == user_data.email).first()
     if existing_email:
         raise ValueError("Email already registered")
     
     # Check if phone exists
-    existing_phone = db.query(Farmer).filter(Farmer.phone == farmer_data.phone).first()
+    existing_phone = db.query(User).filter(User.phone == user_data.phone).first()
     if existing_phone:
         raise ValueError("Phone number already registered")
     
-    # Create new farmer
-    hashed = hash_password(farmer_data.password)
-    new_farmer = Farmer(
-        name=farmer_data.name,
-        email=farmer_data.email,
-        phone=farmer_data.phone,
+    # Use the role from the request
+    role = user_data.role if user_data.role else 'farmer'
+    
+    hashed = hash_password(user_data.password)
+    new_user = User(
+        name=user_data.name,
+        email=user_data.email,
+        phone=user_data.phone,
         password_hash=hashed,
-        language=farmer_data.language
+        language=user_data.language,
+        role=role
     )
     
-    db.add(new_farmer)
+    db.add(new_user)
     db.commit()
-    db.refresh(new_farmer)
-    return new_farmer
+    db.refresh(new_user)
+    return new_user
 
-def authenticate_farmer(db: Session, email: str, password: str):
-    farmer = db.query(Farmer).filter(Farmer.email == email).first()
-    if not farmer:
+def authenticate_user(db: Session, email: str, password: str):
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
         return None
-    if not verify_password(password, farmer.password_hash):
+    if not verify_password(password, user.password_hash):
         return None
     
-    # Include role in the returned user object
     return {
-        "id": farmer.id,
-        "name": farmer.name,
-        "email": farmer.email,
-        "phone": farmer.phone,
-        "language": farmer.language,
-        "role": farmer.role,  # ← ADD THIS
-        "is_verified": farmer.is_verified,
-        "created_at": farmer.created_at
+        "id": user.id,
+        "name": user.name,
+        "email": user.email,
+        "phone": user.phone,
+        "language": user.language,
+        "role": user.role,
+        "is_verified": user.is_verified,
+        "created_at": user.created_at
     }
