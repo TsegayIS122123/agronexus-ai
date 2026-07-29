@@ -4,7 +4,7 @@ from typing import Optional
 from app.database import get_db
 from app.services import price_service
 from app.services.role_guard import require_role
-from app.models.farmer import Farmer
+from app.models.user import User
 from datetime import datetime
 
 router = APIRouter(prefix="/api/v1/prices", tags=["Price Prediction"])
@@ -14,7 +14,7 @@ def get_price_forecast(
     crop: str = Query(..., description="Crop name (e.g., teff, wheat, maize)"),
     region: str = Query(..., description="Region (e.g., shewa, amhara, oromia)"),
     days: int = Query(30, ge=7, le=90, description="Forecast days (7-90)"),
-    user: Farmer = Depends(require_role(["farmer", "processor", "consumer"])),
+    user: User = Depends(require_role(["farmer", "processor", "consumer"])),
     db: Session = Depends(get_db)
 ):
     """Get price forecast for a specific crop and region"""
@@ -33,7 +33,7 @@ def get_historical_prices(
     crop: str = Query(..., description="Crop name"),
     region: str = Query(..., description="Region"),
     limit: int = Query(90, ge=1, le=365, description="Number of days to return"),
-    user: Farmer = Depends(require_role(["farmer", "processor", "consumer"])),
+    user: User = Depends(require_role(["farmer", "processor", "consumer"])),
     db: Session = Depends(get_db)
 ):
     """Get historical price data for a crop"""
@@ -58,7 +58,7 @@ def get_historical_prices(
 
 @router.get("/crops")
 def get_crops(
-    user: Farmer = Depends(require_role(["farmer", "processor", "consumer"])),
+    user: User = Depends(require_role(["farmer", "processor", "consumer"])),
     db: Session = Depends(get_db)
 ):
     """Get list of available crops"""
@@ -70,7 +70,7 @@ def get_crops(
 
 @router.get("/regions")
 def get_regions(
-    user: Farmer = Depends(require_role(["farmer", "processor", "consumer"])),
+    user: User = Depends(require_role(["farmer", "processor", "consumer"])),
     db: Session = Depends(get_db)
 ):
     """Get list of available regions"""
@@ -82,7 +82,7 @@ def get_regions(
 
 @router.post("/seed-data")
 def seed_price_data(
-    user: Farmer = Depends(require_role(["admin"])),
+    user: User = Depends(require_role(["admin"])),
     db: Session = Depends(get_db)
 ):
     """Seed sample price data (Admin only)"""

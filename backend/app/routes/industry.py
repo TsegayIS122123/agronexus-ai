@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from app.database import get_db
 from app.services import industry_service
 from app.services.role_guard import require_role
-from app.models.farmer import Farmer
+from app.models.user import User
 
 router = APIRouter(prefix="/api/v1/industry", tags=["Industry Zone"])
 
@@ -18,7 +18,7 @@ class FeasibilityRequest(BaseModel):
 
 @router.get("/products")
 def get_products(
-    user: Farmer = Depends(require_role(["farmer", "processor", "consumer"])),
+    user: User = Depends(require_role(["farmer", "processor", "consumer"])),
     category: Optional[str] = Query(None, description="Filter by category")
 ):
     """Get available products for processing"""
@@ -48,7 +48,7 @@ def get_products(
 @router.get("/products/{product_name}")
 def get_product_detail(
     product_name: str,
-    user: Farmer = Depends(require_role(["farmer", "processor", "consumer"]))
+    user: User = Depends(require_role(["farmer", "processor", "consumer"]))
 ):
     """Get detailed product information"""
     spec = industry_service.get_product_spec(product_name)
@@ -75,7 +75,7 @@ def get_product_detail(
 @router.post("/feasibility")
 def analyze_feasibility(
     request: FeasibilityRequest,
-    user: Farmer = Depends(require_role(["farmer", "processor"])),
+    user: User = Depends(require_role(["farmer", "processor"])),
     db: Session = Depends(get_db)
 ):
     """Analyze factory feasibility for a product"""
@@ -122,7 +122,7 @@ def analyze_feasibility(
 
 @router.get("/reports")
 def get_reports(
-    user: Farmer = Depends(require_role(["farmer", "processor"])),
+    user: User = Depends(require_role(["farmer", "processor"])),
     db: Session = Depends(get_db)
 ):
     """Get user's feasibility reports"""
@@ -147,7 +147,7 @@ def get_reports(
 
 @router.get("/equipment")
 def get_equipment(
-    user: Farmer = Depends(require_role(["farmer", "processor", "consumer"])),
+    user: User = Depends(require_role(["farmer", "processor", "consumer"])),
     category: Optional[str] = Query(None, description="Filter by category"),
     db: Session = Depends(get_db)
 ):

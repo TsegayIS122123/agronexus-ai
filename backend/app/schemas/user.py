@@ -4,17 +4,16 @@ from datetime import datetime
 import uuid
 import re
 
-class FarmerRegister(BaseModel):
+class UserRegister(BaseModel):
     name: str = Field(..., min_length=2, max_length=100)
     email: EmailStr
-    phone: str = Field(..., min_length=10, max_length=13)  # ← Changed
+    phone: str = Field(..., min_length=10, max_length=13)
     password: str = Field(..., min_length=6)
     language: str = Field(default="am")
     role: str = Field(default="farmer")
     
     @field_validator('phone')
     def validate_ethiopian_phone(cls, v):
-        # Accept both +251XXXXXXXXX (13 chars) and 09XXXXXXXX (10 chars)
         if not re.match(r'^(\+251[0-9]{9}|09[0-9]{8})$', v):
             raise ValueError('Phone must be +251XXXXXXXXX or 09XXXXXXXX')
         return v
@@ -31,11 +30,11 @@ class FarmerRegister(BaseModel):
             raise ValueError('Role must be farmer, processor, consumer, or admin')
         return v
 
-class FarmerLogin(BaseModel):
+class UserLogin(BaseModel):
     email: EmailStr
     password: str
 
-class FarmerResponse(BaseModel):
+class UserResponse(BaseModel):
     id: uuid.UUID
     name: str
     email: str
@@ -51,4 +50,4 @@ class FarmerResponse(BaseModel):
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
-    user: FarmerResponse
+    user: UserResponse
