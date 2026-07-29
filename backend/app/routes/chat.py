@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from app.database import get_db
 from app.services import chat_service
 from app.services.role_guard import require_role
-from app.models.farmer import Farmer
+from app.models.user import User
 
 router = APIRouter(prefix="/api/v1/chat", tags=["AI Chat Assistant"])
 
@@ -21,7 +21,7 @@ class NewSessionRequest(BaseModel):
 @router.post("/sessions")
 def create_session(
     req: NewSessionRequest,
-    user: Farmer = Depends(require_role(["farmer", "processor"])),
+    user: User = Depends(require_role(["farmer", "processor"])),
     db: Session = Depends(get_db)
 ):
     """Create a new chat session"""
@@ -37,7 +37,7 @@ def create_session(
 
 @router.get("/sessions")
 def get_sessions(
-    user: Farmer = Depends(require_role(["farmer", "processor"])),
+    user: User = Depends(require_role(["farmer", "processor"])),
     db: Session = Depends(get_db)
 ):
     """Get user's chat sessions"""
@@ -59,7 +59,7 @@ def get_sessions(
 @router.post("/messages")
 def send_message(
     req: ChatRequest,
-    user: Farmer = Depends(require_role(["farmer", "processor"])),
+    user: User = Depends(require_role(["farmer", "processor"])),
     db: Session = Depends(get_db)
 ):
     """Send a message and get AI response"""
@@ -103,7 +103,7 @@ def send_message(
 @router.get("/messages/{session_id}")
 def get_messages(
     session_id: str,
-    user: Farmer = Depends(require_role(["farmer", "processor"])),
+    user: User = Depends(require_role(["farmer", "processor"])),
     db: Session = Depends(get_db)
 ):
     """Get messages for a session"""
@@ -134,7 +134,7 @@ def get_messages(
 @router.delete("/sessions/{session_id}")
 def delete_session(
     session_id: str,
-    user: Farmer = Depends(require_role(["farmer", "processor"])),
+    user: User = Depends(require_role(["farmer", "processor"])),
     db: Session = Depends(get_db)
 ):
     """Delete a chat session"""
