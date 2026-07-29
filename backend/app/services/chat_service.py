@@ -90,7 +90,7 @@ def get_fallback_response(query: str) -> str:
         return "🩺 Use Disease Detection to upload a photo and get instant diagnosis."
     
     if any(word in query_lower for word in ["plant", "crop", "grow", "seed"]):
-        return "🌾 For planting advice, visit Farmer Resources. Ask about specific crops like teff or wheat."
+        return "🌾 For planting advice, visit User Resources. Ask about specific crops like teff or wheat."
     
     return "📚 I'm here to help! Ask me about crops, diseases, markets, weather, or farming practices."
 

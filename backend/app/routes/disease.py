@@ -5,14 +5,14 @@ import uuid
 from app.database import get_db
 from app.services import disease_service
 from app.services.role_guard import require_role
-from app.models.farmer import Farmer
+from app.models.user import User
 
 router = APIRouter(prefix="/api/v1/disease", tags=["Disease Detection"])
 
 @router.post("/detect")
 async def detect_disease(
     file: UploadFile = File(...),
-    user: Farmer = Depends(require_role(["farmer", "processor"])),
+    user: User = Depends(require_role(["farmer", "processor"])),
     crop_type: str = Form(...),
     language: str = Form("am"),
     db: Session = Depends(get_db)
@@ -24,10 +24,9 @@ async def detect_disease(
         if not file.content_type.startswith("image/"):
             raise HTTPException(status_code=400, detail="File must be an image")
         
-        # Use user.id from authenticated user (not farmer_id param)
         result = disease_service.detect_disease(
             db=db,
-            farmer_id=user.id,  # ← FIXED: use user.id
+            farmer_id=user.id,
             crop_type=crop_type,
             image_data=image_data,
             language=language
@@ -46,12 +45,11 @@ async def detect_disease(
 @router.get("/history/{farmer_id}")
 def get_history(
     farmer_id: str,
-    user: Farmer = Depends(require_role(["farmer", "processor"])),
+    user: User = Depends(require_role(["farmer", "processor"])),
     db: Session = Depends(get_db)
 ):
     """Get disease detection history - Users can only see their own"""
     try:
-        # Users can only see their own history
         if str(user.id) != farmer_id:
             raise HTTPException(status_code=403, detail="Access denied")
         
