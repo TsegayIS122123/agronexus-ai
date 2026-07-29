@@ -1,144 +1,98 @@
 import logging
+import os
 from typing import List, Dict, Optional
 from datetime import datetime
 from sqlalchemy.orm import Session
-from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
-from langchain_community.vectorstores import FAISS
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.chains import RetrievalQA
-from langchain.prompts import PromptTemplate
-import os
-import pickle
-from pathlib import Path
 
 from app.models.chat import ChatSession, ChatMessage
 
 logger = logging.getLogger(__name__)
 
-# Initialize LLM
+# Try to import LangChain-related classes, fallback to simple responses
+try:
+    from langchain_google_genai import ChatGoogleGenerativeAI
+    from langchain_google_genai import GoogleGenerativeAIEmbeddings
+    from langchain_text_splitters import RecursiveCharacterTextSplitter
+    LANGCHAIN_AVAILABLE = True
+    logger.info("✅ LangChain loaded successfully")
+except ImportError as e:
+    LANGCHAIN_AVAILABLE = False
+    logger.warning(f"⚠️ LangChain not available: {e}. Using fallback responses.")
+
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-if not GEMINI_API_KEY:
-    logger.warning("⚠️ GEMINI_API_KEY not set. Chat will use fallback responses.")
 
-llm = ChatGoogleGenerativeAI(
-    model="gemini-1.5-flash",
-    google_api_key=GEMINI_API_KEY,
-    temperature=0.7,
-    convert_system_message_to_human=True
-)
+# Simple knowledge base for fallback
+KNOWLEDGE_BASE = {
+    "teff rust": "Teff rust is a fungal disease. Treatment: Remove infected plants, apply fungicides, and ensure proper spacing.",
+    "wheat smut": "Wheat smut is caused by infected seeds. Use certified seeds, treat with hot water, and rotate crops.",
+    "planting teff": "Plant teff in July-August in central Ethiopia. Ensure soil temperature is above 15°C.",
+    "fertilizer wheat": "Apply 100-150 kg/ha DAP at planting and 100-200 kg/ha urea in split applications.",
+    "coffee rust": "Coffee leaf rust shows yellow-orange spots. Apply fungicides and maintain 40-50% shade.",
+    "maize storage": "Dry maize to 12-13% moisture, use hermetic bags, store in ventilated areas.",
+    "maize spacing": "Plant maize 75cm between rows and 25-30cm between plants.",
+    "soil fertility": "Use compost, manure, crop rotation with legumes, and green manure cover crops.",
+    "teff pests": "Common teff pests: cutworms, armyworms, and rats. Control with early planting and pesticides.",
+    "wheat harvest": "Harvest wheat when fully mature (12-14% moisture), 4-5 months after planting.",
+}
 
-# Embeddings for RAG
-embeddings = GoogleGenerativeAIEmbeddings(
-    model="models/embedding-001",
-    google_api_key=GEMINI_API_KEY
-)
+# Try to initialize LangChain
+if LANGCHAIN_AVAILABLE and GEMINI_API_KEY:
+    try:
+        llm = ChatGoogleGenerativeAI(
+            model="gemini-1.5-flash",
+            google_api_key=GEMINI_API_KEY,
+            temperature=0.7
+        )
+        embeddings = GoogleGenerativeAIEmbeddings(
+            model="models/embedding-001",
+            google_api_key=GEMINI_API_KEY
+        )
+        logger.info("✅ Gemini initialized successfully")
+    except Exception as e:
+        logger.error(f"❌ Gemini initialization failed: {e}")
+        LANGCHAIN_AVAILABLE = False
 
-# Knowledge base directory
-KNOWLEDGE_DIR = Path(__file__).parent / "chat" / "knowledge"
-VECTOR_STORE_PATH = Path(__file__).parent / "chat" / "vector_store"
-
-def load_knowledge_base():
-    """Load and index knowledge base files"""
-    if not KNOWLEDGE_DIR.exists():
-        logger.warning("Knowledge base directory not found")
-        return None
+def get_response(query: str) -> str:
+    """Get response using LangChain or fallback"""
+    # Check if query matches knowledge base
+    query_lower = query.lower()
+    for key, value in KNOWLEDGE_BASE.items():
+        if key in query_lower:
+            return value
     
-    texts = []
-    for file_path in KNOWLEDGE_DIR.glob("*.txt"):
-        with open(file_path, 'r', encoding='utf-8') as f:
-            content = f.read()
-            texts.append(content)
-    
-    if not texts:
-        return None
-    
-    # Split text into chunks
-    text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=1000,
-        chunk_overlap=200,
-        separators=["\n\n", "\n", " ", ""]
-    )
-    chunks = text_splitter.create_documents(texts)
-    
-    # Create vector store
-    vector_store = FAISS.from_documents(chunks, embeddings)
-    
-    # Save vector store
-    vector_store.save_local(str(VECTOR_STORE_PATH))
-    
-    return vector_store
-
-def get_vector_store():
-    """Load vector store from disk or create if not exists"""
-    if VECTOR_STORE_PATH.exists():
+    # Try LangChain if available
+    if LANGCHAIN_AVAILABLE and GEMINI_API_KEY:
         try:
-            return FAISS.load_local(
-                str(VECTOR_STORE_PATH),
-                embeddings,
-                allow_dangerous_deserialization=True
-            )
+            # Simple prompt without RAG for now
+            prompt = f"""You are AgroNexus AI, a farming assistant for Ethiopian farmers.
+            Question: {query}
+            Answer: Provide practical, specific advice for Ethiopian farmers."""
+            
+            response = llm.invoke(prompt)
+            return response.content
         except Exception as e:
-            logger.error(f"Error loading vector store: {e}")
-            return load_knowledge_base()
-    else:
-        return load_knowledge_base()
-
-# Load vector store
-vector_store = get_vector_store()
-
-# RAG Prompt Template
-prompt_template = """You are AgroNexus AI, a helpful farming assistant for Ethiopian farmers. 
-Answer the question based on the context provided. Be specific, practical, and use local examples.
-If the question is not related to agriculture, farming, or Ethiopian markets, politely say you only provide agricultural advice.
-
-Context: {context}
-
-Question: {question}
-
-Answer:"""
-
-rag_prompt = PromptTemplate(
-    template=prompt_template,
-    input_variables=["context", "question"]
-)
-
-def get_chain():
-    """Get RAG chain with vector store"""
-    if vector_store is None:
-        return None
+            logger.error(f"LangChain error: {e}")
+            return get_fallback_response(query)
     
-    retriever = vector_store.as_retriever(
-        search_type="similarity",
-        search_kwargs={"k": 4}
-    )
-    
-    chain = RetrievalQA.from_chain_type(
-        llm=llm,
-        chain_type="stuff",
-        retriever=retriever,
-        chain_type_kwargs={"prompt": rag_prompt}
-    )
-    
-    return chain
+    return get_fallback_response(query)
 
 def get_fallback_response(query: str) -> str:
     """Fallback responses when LLM is unavailable"""
     query_lower = query.lower()
     
-    if "weather" in query_lower:
-        return "🌤️ For weather information, check the Weather section in your dashboard. You can find 5-day forecasts for your region."
+    if any(word in query_lower for word in ["weather", "rain", "sun"]):
+        return "🌤️ Check the Weather section in your dashboard for 5-day forecasts in your region."
     
-    if "market" in query_lower or "price" in query_lower:
-        return "💰 Check the Price Prediction section in your dashboard for current and forecasted crop prices in your region."
+    if any(word in query_lower for word in ["market", "price", "sell"]):
+        return "💰 Check the Price Prediction section for current and forecasted crop prices."
     
-    if "disease" in query_lower:
-        return "🩺 Use the Disease Detection feature in your dashboard to upload a photo and get instant diagnosis."
+    if any(word in query_lower for word in ["disease", "sick", "rust", "smut"]):
+        return "🩺 Use Disease Detection to upload a photo and get instant diagnosis."
     
-    if "plant" in query_lower or "crop" in query_lower:
-        return "🌾 For planting advice, visit the Farmer Resources section. You can also ask about specific crops like teff, wheat, or maize."
+    if any(word in query_lower for word in ["plant", "crop", "grow", "seed"]):
+        return "🌾 For planting advice, visit Farmer Resources. Ask about specific crops like teff or wheat."
     
-    return "📚 I'm here to help with farming advice! You can ask about crops, diseases, market prices, weather, or general farming practices."
+    return "📚 I'm here to help! Ask me about crops, diseases, markets, weather, or farming practices."
 
 def create_session(db: Session, user_id: str, language: str = "en") -> ChatSession:
     """Create a new chat session"""
@@ -178,16 +132,7 @@ def send_message(db: Session, session_id: str, user_message: str, language: str 
         db.commit()
         
         # Get AI response
-        chain = get_chain()
-        if chain and GEMINI_API_KEY:
-            try:
-                result = chain.invoke({"query": user_message})
-                ai_response = result.get("result", get_fallback_response(user_message))
-            except Exception as e:
-                logger.error(f"LLM error: {e}")
-                ai_response = get_fallback_response(user_message)
-        else:
-            ai_response = get_fallback_response(user_message)
+        ai_response = get_response(user_message)
         
         # Save AI response
         ai_msg = ChatMessage(
