@@ -30,10 +30,12 @@ export default function ProcessorDashboard() {
     
     try {
       const parsed = JSON.parse(userData);
-      setUser(parsed);
-      if (parsed.role && parsed.role !== 'processor') {
-        router.push(`/${parsed.role}/dashboard`);
+      const role = (parsed.role || 'processor').toLowerCase();
+      if (role !== 'processor') {
+        router.push(`/${role}/dashboard`);
+        return;
       }
+      setUser({ ...parsed, role });
     } catch (e) {
       router.push('/auth/login');
     } finally {
@@ -44,8 +46,6 @@ export default function ProcessorDashboard() {
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    document.cookie = 'access_token=; path=/; max-age=0; SameSite=Lax';
-    document.cookie = 'user_role=; path=/; max-age=0; SameSite=Lax';
     router.push('/');
   };
 
@@ -108,23 +108,27 @@ export default function ProcessorDashboard() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-white p-6 rounded-lg shadow">
-            <div className="text-4xl mb-4">🏗️</div>
-            <h3 className="text-xl font-semibold mb-2">Factory Advisor</h3>
-            <p className="text-gray-600 mb-4">Assess processing feasibility</p>
-            <button disabled className="text-blue-600 font-medium opacity-50 cursor-not-allowed">Coming Soon →</button>
-          </div>
+          <Link href="/processor/feasibility" className="block">
+            <div className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition hover:scale-105 cursor-pointer">
+              <div className="text-4xl mb-4">🏗️</div>
+              <h3 className="text-xl font-semibold mb-2">Factory Advisor</h3>
+              <p className="text-gray-600 mb-4">Assess processing feasibility</p>
+              <span className="text-blue-600 font-medium">Try Now →</span>
+            </div>
+          </Link>
+
           <div className="bg-white p-6 rounded-lg shadow">
             <div className="text-4xl mb-4">✅</div>
             <h3 className="text-xl font-semibold mb-2">Quality Control</h3>
             <p className="text-gray-600 mb-4">AI-powered product grading</p>
-            <button disabled className="text-blue-600 font-medium opacity-50 cursor-not-allowed">Coming Soon →</button>
+            <span className="text-blue-600 font-medium">Coming Soon →</span>
           </div>
+
           <div className="bg-white p-6 rounded-lg shadow">
             <div className="text-4xl mb-4">🔧</div>
             <h3 className="text-xl font-semibold mb-2">Equipment Sourcing</h3>
             <p className="text-gray-600 mb-4">Find processing equipment</p>
-            <button disabled className="text-blue-600 font-medium opacity-50 cursor-not-allowed">Coming Soon →</button>
+            <span className="text-blue-600 font-medium">Coming Soon →</span>
           </div>
         </div>
 
