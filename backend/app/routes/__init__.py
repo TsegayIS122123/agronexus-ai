@@ -1,1 +1,1 @@
-from app.routes import auth, disease, prices, chat, industry
+from app.routes import auth, disease, prices, chat, industry, quality

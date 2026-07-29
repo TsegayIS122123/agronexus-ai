@@ -4,19 +4,9 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  language: string;
-  role: string;
-  created_at: string;
-}
-
 export default function ProcessorDashboard() {
   const router = useRouter();
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -117,12 +107,14 @@ export default function ProcessorDashboard() {
             </div>
           </Link>
 
-          <div className="bg-white p-6 rounded-lg shadow">
-            <div className="text-4xl mb-4">✅</div>
-            <h3 className="text-xl font-semibold mb-2">Quality Control</h3>
-            <p className="text-gray-600 mb-4">AI-powered product grading</p>
-            <span className="text-blue-600 font-medium">Coming Soon →</span>
-          </div>
+          <Link href="/processor/quality" className="block">
+            <div className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition hover:scale-105 cursor-pointer">
+              <div className="text-4xl mb-4">✅</div>
+              <h3 className="text-xl font-semibold mb-2">Quality Control</h3>
+              <p className="text-gray-600 mb-4">AI-powered product grading</p>
+              <span className="text-blue-600 font-medium">Try Now →</span>
+            </div>
+          </Link>
 
           <div className="bg-white p-6 rounded-lg shadow">
             <div className="text-4xl mb-4">🔧</div>
