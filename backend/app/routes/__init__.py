@@ -1,1 +1,1 @@
-from app.routes import auth, disease, prices, chat, industry, quality, equipment
+from app.routes import auth, disease, prices, chat, industry, quality, equipment,cost_calculator, energy
