@@ -1,6 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routes import auth, disease, prices, chat,industry, quality, marketplace
+from app.routes import (
+    auth, disease, prices, chat, industry, quality,
+    equipment, cost_calculator, energy, marketplace
+)
 from app.database import Base, engine
 
 # Create database tables
@@ -23,13 +26,15 @@ app.add_middleware(
 
 # Include routers
 app.include_router(auth.router)
-app.include_router(disease.router)  
+app.include_router(disease.router)
 app.include_router(prices.router)
 app.include_router(chat.router)
 app.include_router(industry.router)
 app.include_router(quality.router)
+app.include_router(equipment.router)
+app.include_router(cost_calculator.router)
+app.include_router(energy.router)
 app.include_router(marketplace.router)
-
 
 @app.get("/")
 def root():
