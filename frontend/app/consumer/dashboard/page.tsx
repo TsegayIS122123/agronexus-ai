@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 interface User {
   id: string;
@@ -29,10 +30,12 @@ export default function ConsumerDashboard() {
     
     try {
       const parsed = JSON.parse(userData);
-      setUser(parsed);
-      if (parsed.role && parsed.role !== 'consumer') {
-        router.push(`/${parsed.role}/dashboard`);
+      const role = (parsed.role || 'consumer').toLowerCase();
+      if (role !== 'consumer') {
+        router.push(`/${role}/dashboard`);
+        return;
       }
+      setUser({ ...parsed, role });
     } catch (e) {
       router.push('/auth/login');
     } finally {
@@ -43,8 +46,6 @@ export default function ConsumerDashboard() {
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    document.cookie = 'access_token=; path=/; max-age=0; SameSite=Lax';
-    document.cookie = 'user_role=; path=/; max-age=0; SameSite=Lax';
     router.push('/');
   };
 
@@ -63,6 +64,7 @@ export default function ConsumerDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Header */}
       <header className="bg-purple-900 shadow-lg sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
@@ -87,6 +89,7 @@ export default function ConsumerDashboard() {
           <p className="text-gray-600">Discover and buy local Ethiopian products</p>
         </div>
 
+        {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <div className="bg-white p-4 rounded-lg shadow">
             <div className="text-2xl font-bold text-purple-600">24</div>
@@ -106,27 +109,35 @@ export default function ConsumerDashboard() {
           </div>
         </div>
 
+        {/* Feature Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-white p-6 rounded-lg shadow">
-            <div className="text-4xl mb-4">🛍️</div>
-            <h3 className="text-xl font-semibold mb-2">Product Catalog</h3>
-            <p className="text-gray-600 mb-4">Browse Ethiopian-made products</p>
-            <button disabled className="text-purple-600 font-medium opacity-50 cursor-not-allowed">Coming Soon →</button>
-          </div>
+          <Link href="/marketplace" className="block">
+            <div className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition hover:scale-105 cursor-pointer">
+              <div className="text-4xl mb-4">🛍️</div>
+              <h3 className="text-xl font-semibold mb-2">Product Catalog</h3>
+              <p className="text-gray-600 mb-4">Browse Ethiopian-made products</p>
+              <span className="text-purple-600 font-medium">Browse Now →</span>
+            </div>
+          </Link>
+
+          <Link href="/marketplace/orders" className="block">
+            <div className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition hover:scale-105 cursor-pointer">
+              <div className="text-4xl mb-4">📋</div>
+              <h3 className="text-xl font-semibold mb-2">My Orders</h3>
+              <p className="text-gray-600 mb-4">Track your orders</p>
+              <span className="text-purple-600 font-medium">View Orders →</span>
+            </div>
+          </Link>
+
           <div className="bg-white p-6 rounded-lg shadow">
             <div className="text-4xl mb-4">📊</div>
             <h3 className="text-xl font-semibold mb-2">Price Comparison</h3>
             <p className="text-gray-600 mb-4">Compare local vs imported</p>
-            <button disabled className="text-purple-600 font-medium opacity-50 cursor-not-allowed">Coming Soon →</button>
-          </div>
-          <div className="bg-white p-6 rounded-lg shadow">
-            <div className="text-4xl mb-4">🚚</div>
-            <h3 className="text-xl font-semibold mb-2">Direct Delivery</h3>
-            <p className="text-gray-600 mb-4">Get products delivered</p>
-            <button disabled className="text-purple-600 font-medium opacity-50 cursor-not-allowed">Coming Soon →</button>
+            <span className="text-purple-600 font-medium">Coming Soon →</span>
           </div>
         </div>
 
+        {/* Profile */}
         <div className="mt-8 bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-semibold mb-4">Your Profile</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-600">

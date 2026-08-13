@@ -31,8 +31,6 @@ export default function FarmerDashboard() {
     try {
       const parsed = JSON.parse(userData);
       setUser(parsed);
-      
-      // Redirect if wrong role
       if (parsed.role && parsed.role !== 'farmer') {
         router.push(`/${parsed.role}/dashboard`);
       }
@@ -46,8 +44,6 @@ export default function FarmerDashboard() {
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    document.cookie = 'access_token=; path=/; max-age=0; SameSite=Lax';
-    document.cookie = 'user_role=; path=/; max-age=0; SameSite=Lax';
     router.push('/');
   };
 
@@ -66,7 +62,7 @@ export default function FarmerDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* ========== DASHBOARD HEADER ========== */}
+      {/* Header */}
       <header className="bg-green-900 shadow-lg sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
@@ -77,10 +73,7 @@ export default function FarmerDashboard() {
             </div>
             <div className="flex items-center space-x-4">
               <span className="text-white text-sm hidden md:block">Welcome, {user.name}</span>
-              <button
-                onClick={handleLogout}
-                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition text-sm font-medium"
-              >
+              <button onClick={handleLogout} className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition text-sm font-medium">
                 Logout
               </button>
             </div>
@@ -88,9 +81,7 @@ export default function FarmerDashboard() {
         </div>
       </header>
 
-      {/* ========== DASHBOARD CONTENT ========== */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Welcome Section */}
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-gray-900">Farmer Dashboard</h2>
           <p className="text-gray-600">Your AI-powered farming assistant</p>
@@ -116,8 +107,8 @@ export default function FarmerDashboard() {
           </div>
         </div>
 
-        {/* Feature Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Row 1 - Farmer Features */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
           <Link href="/farmer/disease" className="block">
             <div className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition hover:scale-105 cursor-pointer">
               <div className="text-4xl mb-4">🔬</div>
@@ -146,7 +137,37 @@ export default function FarmerDashboard() {
           </Link>
         </div>
 
-        {/* Profile Section */}
+        {/* Row 2 - Marketplace Features */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Link href="/marketplace" className="block">
+            <div className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition hover:scale-105 cursor-pointer">
+              <div className="text-4xl mb-4">🏪</div>
+              <h3 className="text-xl font-semibold mb-2">Marketplace</h3>
+              <p className="text-gray-600 mb-4">Buy and sell agricultural products</p>
+              <span className="text-purple-600 font-medium">Browse Now →</span>
+            </div>
+          </Link>
+
+          <Link href="/marketplace/listings/new" className="block">
+            <div className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition hover:scale-105 cursor-pointer">
+              <div className="text-4xl mb-4">📦</div>
+              <h3 className="text-xl font-semibold mb-2">Sell Products</h3>
+              <p className="text-gray-600 mb-4">List your crops for sale</p>
+              <span className="text-purple-600 font-medium">Create Listing →</span>
+            </div>
+          </Link>
+
+          <Link href="/marketplace/orders" className="block">
+            <div className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition hover:scale-105 cursor-pointer">
+              <div className="text-4xl mb-4">📋</div>
+              <h3 className="text-xl font-semibold mb-2">My Orders</h3>
+              <p className="text-gray-600 mb-4">Track your marketplace orders</p>
+              <span className="text-purple-600 font-medium">View Orders →</span>
+            </div>
+          </Link>
+        </div>
+
+        {/* Profile */}
         <div className="mt-8 bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-semibold mb-4">Your Profile</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-600">
