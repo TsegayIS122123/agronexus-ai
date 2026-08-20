@@ -629,7 +629,6 @@ erDiagram
         string market
     }
 ```
-
 ---
 
 ## 🤖 **AI Models**
