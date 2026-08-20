@@ -2,7 +2,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routes import (
     auth, disease, prices, chat, industry, quality,
-    equipment, cost_calculator, energy, marketplace
+    equipment, cost_calculator, energy, marketplace,
+    weather, cooperative, price_comparison
 )
 from app.database import Base, engine
 
@@ -35,6 +36,9 @@ app.include_router(equipment.router)
 app.include_router(cost_calculator.router)
 app.include_router(energy.router)
 app.include_router(marketplace.router)
+app.include_router(weather.router)          
+app.include_router(cooperative.router)       
+app.include_router(price_comparison.router)  
 
 @app.get("/")
 def root():

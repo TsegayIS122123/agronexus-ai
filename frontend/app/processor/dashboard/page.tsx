@@ -97,7 +97,8 @@ export default function ProcessorDashboard() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Row 1 - Industry Features */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
           <Link href="/processor/feasibility" className="block">
             <div className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition hover:scale-105 cursor-pointer">
               <div className="text-4xl mb-4">🏗️</div>
@@ -116,10 +117,38 @@ export default function ProcessorDashboard() {
             </div>
           </Link>
 
+          <Link href="/processor/equipment" className="block">
+            <div className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition hover:scale-105 cursor-pointer">
+              <div className="text-4xl mb-4">🔧</div>
+              <h3 className="text-xl font-semibold mb-2">Equipment Sourcing</h3>
+              <p className="text-gray-600 mb-4">Buy/sell processing equipment</p>
+              <span className="text-blue-600 font-medium">Browse Now →</span>
+            </div>
+          </Link>
+        </div>
+
+        {/* Row 2 - Additional Features */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Link href="/processor/equipment/new" className="block">
+            <div className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition hover:scale-105 cursor-pointer">
+              <div className="text-4xl mb-4">📦</div>
+              <h3 className="text-xl font-semibold mb-2">List Equipment</h3>
+              <p className="text-gray-600 mb-4">Sell your processing equipment</p>
+              <span className="text-blue-600 font-medium">List Now →</span>
+            </div>
+          </Link>
+
           <div className="bg-white p-6 rounded-lg shadow">
-            <div className="text-4xl mb-4">🔧</div>
-            <h3 className="text-xl font-semibold mb-2">Equipment Sourcing</h3>
-            <p className="text-gray-600 mb-4">Find processing equipment</p>
+            <div className="text-4xl mb-4">💰</div>
+            <h3 className="text-xl font-semibold mb-2">Cost Calculator</h3>
+            <p className="text-gray-600 mb-4">Analyze manufacturing costs</p>
+            <span className="text-blue-600 font-medium">Coming Soon →</span>
+          </div>
+
+          <div className="bg-white p-6 rounded-lg shadow">
+            <div className="text-4xl mb-4">⚡</div>
+            <h3 className="text-xl font-semibold mb-2">Energy Optimization</h3>
+            <p className="text-gray-600 mb-4">Solar/biofuel recommendations</p>
             <span className="text-blue-600 font-medium">Coming Soon →</span>
           </div>
         </div>
