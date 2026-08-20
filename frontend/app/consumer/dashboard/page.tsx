@@ -4,19 +4,9 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  language: string;
-  role: string;
-  created_at: string;
-}
-
 export default function ConsumerDashboard() {
   const router = useRouter();
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -64,7 +54,6 @@ export default function ConsumerDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <header className="bg-purple-900 shadow-lg sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
@@ -89,7 +78,6 @@ export default function ConsumerDashboard() {
           <p className="text-gray-600">Discover and buy local Ethiopian products</p>
         </div>
 
-        {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <div className="bg-white p-4 rounded-lg shadow">
             <div className="text-2xl font-bold text-purple-600">24</div>
@@ -109,7 +97,6 @@ export default function ConsumerDashboard() {
           </div>
         </div>
 
-        {/* Feature Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <Link href="/marketplace" className="block">
             <div className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition hover:scale-105 cursor-pointer">
@@ -129,15 +116,16 @@ export default function ConsumerDashboard() {
             </div>
           </Link>
 
-          <div className="bg-white p-6 rounded-lg shadow">
-            <div className="text-4xl mb-4">📊</div>
-            <h3 className="text-xl font-semibold mb-2">Price Comparison</h3>
-            <p className="text-gray-600 mb-4">Compare local vs imported</p>
-            <span className="text-purple-600 font-medium">Coming Soon →</span>
-          </div>
+          <Link href="/consumer/price-comparison" className="block">
+            <div className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition hover:scale-105 cursor-pointer">
+              <div className="text-4xl mb-4">💰</div>
+              <h3 className="text-xl font-semibold mb-2">Price Comparison</h3>
+              <p className="text-gray-600 mb-4">Compare local vs imported prices</p>
+              <span className="text-purple-600 font-medium">Compare Now →</span>
+            </div>
+          </Link>
         </div>
 
-        {/* Profile */}
         <div className="mt-8 bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-semibold mb-4">Your Profile</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-600">
