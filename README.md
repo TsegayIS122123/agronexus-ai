@@ -569,7 +569,7 @@ erDiagram
     }
 
     FarmerProfiles {
-        uuid user_id PK FK
+        uuid user_id PK
         decimal farm_size
         string location
         jsonb crops
@@ -578,17 +578,17 @@ erDiagram
     }
 
     ProcessorProfiles {
-        uuid user_id PK FK
+        uuid user_id PK
         string company_name
         decimal capacity
-        array crops_accepted
+        string array crops_accepted
         string location
         boolean verified
         timestamp created_at
     }
 
     ConsumerProfiles {
-        uuid user_id PK FK
+        uuid user_id PK
         text address
         jsonb payment_methods
         timestamp created_at
@@ -602,7 +602,7 @@ erDiagram
         decimal min_price
         decimal max_price
         text image_url
-        array disease_tags
+        string array disease_tags
         timestamp created_at
     }
 
@@ -744,5 +744,4 @@ MIT License
 <p align="center">
   <sub>Made with ❤️ in Addis Ababa, Ethiopia</sub>
 </p>
-EOF
-```
+
