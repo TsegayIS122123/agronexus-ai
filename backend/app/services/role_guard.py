@@ -4,9 +4,7 @@ from sqlalchemy.orm import Session
 import os
 from app.models.user import User
 from app.database import get_db
-
-SECRET_KEY = os.getenv("SECRET_KEY", "your-super-secret-key-change-in-production")
-ALGORITHM = "HS256"
+from app.services.auth_service import ALGORITHM, SECRET_KEY
 
 def get_current_user(request: Request, db: Session = Depends(get_db)):
     """Get current user from JWT token in httpOnly cookie"""

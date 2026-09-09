@@ -1,15 +1,15 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from app.services.auth_service import get_secret_key
+
+# Fail before route imports if required security configuration is invalid.
+get_secret_key()
+
 from app.routes import (
     auth, disease, prices, chat, industry, quality,
     equipment, cost_calculator, energy, marketplace,
     weather, cooperative, price_comparison
 )
-from app.database import Base, engine
-
-# Create database tables
-Base.metadata.create_all(bind=engine)
-
 app = FastAPI(
     title="AgroNexus AI API",
     description="AI-powered platform for Ethiopian agriculture",

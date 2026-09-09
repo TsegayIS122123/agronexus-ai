@@ -1,483 +1,172 @@
-# 🌱 **AgroNexus AI**
+# AgroNexus AI
 
-<p align="center">
-  <b>AI Operating System for Ethiopia's Agricultural Value Chain</b>
-</p>
+> **AI for the agricultural value chain in Ethiopia**
+>
+> Disease intelligence for farmers. Better market decisions. A transparent path from farm to processor.
 
-<p align="center">
-  <i>From Soil to Shelf — Powered by Artificial Intelligence</i>
-</p>
+AgroNexus AI is an AI-native platform concept and working prototype for connecting farmers, processors, and consumers across Ethiopia's agricultural value chain. It combines computer vision, retrieval-augmented generation, forecasting, and secure marketplace workflows in one product direction.
 
-<p align="center">
-  <a href="#"><img src="https://img.shields.io/badge/Python-3.11-blue.svg" alt="Python"/></a>
-  <a href="#"><img src="https://img.shields.io/badge/FastAPI-0.115-green.svg" alt="FastAPI"/></a>
-  <a href="#"><img src="https://img.shields.io/badge/Next.js-15-black.svg" alt="Next.js"/></a>
-  <a href="#"><img src="https://img.shields.io/badge/PostgreSQL-16-blue.svg" alt="PostgreSQL"/></a>
-  <a href="#"><img src="https://img.shields.io/badge/Docker-27.3-blue.svg" alt="Docker"/></a>
-  <a href="#"><img src="https://img.shields.io/badge/YOLOv8-8.3-red.svg" alt="YOLOv8"/></a>
-  <a href="#"><img src="https://img.shields.io/badge/LangChain-0.3-green.svg" alt="LangChain"/></a>
-  <a href="#"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="MIT License"/></a>
-</p>
+The project is being shaped as a portfolio-grade system with a clear separation of responsibilities:
 
----
+- **Next.js** for the web experience
+- **NestJS** for enterprise business workflows
+- **FastAPI/Python** for AI and ML services
+- **PostgreSQL, Redis, object storage, and asynchronous workers** for reliable infrastructure
 
-## 📖 **Table of Contents**
+> **Honest status:** the repository currently contains the original FastAPI prototype and Next.js frontend. The NestJS platform backend, Chapa payment flow, and production hardening are documented as the target migration and are not falsely presented as complete.
 
-- [Overview](#-overview)
-- [The Problem](#-the-problem)
-- [Our Solution](#-our-solution)
-- [System Architecture](#-system-architecture)
-- [Features](#-features)
-- [Technology Stack](#-technology-stack)
-- [Project Structure](#-project-structure)
-- [Quick Start](#-quick-start)
-- [API Documentation](#-api-documentation)
-- [Database Design](#-database-design)
-- [AI Models](#-ai-models)
-- [Deployment](#-deployment)
-- [Contributing](#-contributing)
-- [Authors](#-authors)
-- [License](#-license)
+## Why AgroNexus AI?
 
----
+Smallholder farmers and agro-processors often lack timely information about crop disease, market prices, quality, and reliable buyers. AgroNexus AI focuses on making those decisions more accessible while preserving a secure, auditable path for real transactions.
 
-## 🎯 **Overview**
-
-**AgroNexus AI** is a production-grade artificial intelligence platform that bridges the critical gap between Ethiopian smallholder farmers and the agro-industrial sector. It creates a seamless value chain from **Agriculture → Industry → Markets** by democratizing access to AI-powered agricultural intelligence.
-
-### **Our Vision**
-
-> *"Transform Ethiopia from a raw material exporter to a manufacturing hub by making agricultural intelligence accessible to every farmer and connecting them directly to industry."*
-
-### **Our Mission**
-
-1. **Empower 1 million farmers** with AI tools by 2030
-2. **Enable 1,000+ local agro-processors** to manufacture finished goods
-3. **Reduce food imports by $500M** through import substitution
-4. **Create 50,000+ jobs** across the agricultural value chain
-
----
-
-## 📊 **The Problem**
-
-### **The Current Reality**
+## Product vision
 
 ```mermaid
-graph LR
-    subgraph Current["Current Reality"]
-        FARMER[("🌾 Farmer<br/>Raw Materials")]
-        EXPORT[("🚢 Export<br/>Low Value")]
-        MIDDLEMEN[("💰 Middlemen<br/>40-60% Capture")]
-        PROCESSING[("🏭 Processing<br/>Minimal")]
-        IMPORTS[("📦 Imports<br/>$2B+")]
-        
-        FARMER --> EXPORT
-        FARMER --> MIDDLEMEN
-        MIDDLEMEN --> PROCESSING
-        PROCESSING --> IMPORTS
-    end
+flowchart LR
+    Farmer[Farmer] --> Intelligence[AI intelligence]
+    Intelligence --> Marketplace[Trusted marketplace]
+    Marketplace --> Processor[Processor]
+    Processor --> Consumer[Consumer]
+    Marketplace --> Impact[Transparent impact data]
 ```
 
-### **The Three Gaps**
+The first target product slice is intentionally narrow:
 
-| Gap | The Problem | The Impact |
-|-----|-------------|------------|
-| **Information Gap** | Farmers lack access to market prices, weather data, and expert advice | Farmers make decisions in the dark, losing money and harvests |
-| **Disease Gap** | Without early detection, crop diseases spread unchecked | 30-50% of harvests lost annually |
-| **Value Chain Gap** | Farmers sell to middlemen who capture most of the value | 40-60% of profits never reach the farmer |
+1. A verified farmer submits a crop image and receives a versioned disease-analysis result.
+2. The farmer publishes a product listing.
+3. A processor or consumer creates an order.
+4. The order is paid through Chapa sandbox verification.
+5. Notifications and audit events make the workflow traceable.
 
----
+That target slice is the implementation goal. The repository currently contains prototype pieces of it, not a tested end-to-end production workflow.
 
-## 🚀 **Our Solution**
+## Capabilities
 
-### **The AgroNexus AI Platform**
+| Capability | Status | Evidence / next boundary |
+|---|---|---|
+| Next.js role-based frontend | In Progress | Pages and API calls exist; no automated frontend tests or shared layout |
+| FastAPI agricultural routes | In Progress | Route/service surface exists; no automated backend tests |
+| YOLO disease detection | In Progress | Model artifacts and inference path exist; fallback can randomize results; no measured evaluation |
+| RAG agricultural assistant | In Progress | Gemini/keyword fallback exists; no vector retrieval or populated document store |
+| Price and market features | In Progress | Prophet/database route exists; no LSTM execution or evaluation tests |
+| Marketplace listings and orders | In Progress | CRUD/status routes exist; payment and ownership hardening remain |
+| Authentication and authorization | In Progress - known issue | Public admin registration and order authorization by role name are unresolved |
+| Chapa payments | Planned | No provider adapter, sandbox checkout, webhook, or payment endpoint |
+| Email/SMS notifications | Planned | No email/SMS provider integration or notification worker |
+| Mobile application | Planned | No mobile client or mobile-specific backend implementation |
 
-```mermaid
-graph LR
-    subgraph Vision["Our Solution"]
-        FARMER[("🌾 Farmer")]
-        INTELLIGENCE[("🧠 AI Intelligence")]
-        INDUSTRY[("🏭 Industry")]
-        MARKET[("🤝 Market")]
-        COMMUNITY[("👨‍👩‍👧‍👦 Community")]
-        
-        FARMER --> INTELLIGENCE
-        INTELLIGENCE --> INDUSTRY
-        INDUSTRY --> MARKET
-        MARKET --> COMMUNITY
-    end
-```
+### Known security issues
 
-### **How We Solve It**
+- **Public admin registration:** the current registration schema accepts `role=admin`; admin accounts must be provisioned server-side.
+- **Order authorization by role name:** the current order-status logic checks role strings such as `buyer`/`seller` instead of enforcing the authenticated user's actual buyer/seller ID.
 
-| Problem | Our Solution | Technology |
-|---------|--------------|------------|
-| **Crop Diseases** | Instant diagnosis via photo upload | YOLOv8 Computer Vision |
-| **Information Gap** | 24/7 AI assistant in local languages | LangChain + RAG + Gemini |
-| **Price Volatility** | 30-day price forecasts | Prophet + LSTM |
-| **Middlemen** | Direct farmer-processor marketplace | B2B Platform |
-| **Import Dependency** | Local processing advisory | Factory Feasibility AI |
-| **Data Gap** | Real-time economic dashboards | Impact Tracker |
+Both remain **In Progress - known issue** until fixed and covered by tests.
 
----
-
-## 🏗️ **System Architecture**
-
-### **Overall System Design**
+## Architecture
 
 ```mermaid
 flowchart TB
-    subgraph Frontend["Frontend Layer"]
-        WEB["Next.js Web App"]
-        DASH["Industry Dashboard"]
-        ADMIN["Admin Portal"]
-        MOBILE["PWA Mobile App"]
+    subgraph Clients
+        WEB[Next.js web app]
+        MOBILE[Future mobile app]
     end
 
-    subgraph API["API Layer (FastAPI)"]
-        AUTH["Authentication Service"]
-        RATE["Rate Limiter"]
-        WS["WebSocket Gateway"]
-        VALID["Request Validation"]
+    subgraph Platform[NestJS platform backend]
+        AUTH[Auth and users]
+        MARKET[Marketplace and orders]
+        PAY[Payments]
+        NOTIFY[Notifications]
+        AUDIT[Audit and admin]
+        WS[WebSocket events]
     end
 
-    subgraph Services["Services Layer"]
-        FARM["Farmer Service"]
-        INDUSTRY["Industry Service"]
-        MARKET["Marketplace Service"]
-        NOTIFY["Notification Service"]
-        ANALYTICS["Analytics Service"]
+    subgraph AI[FastAPI and Python AI services]
+        VISION[YOLO disease detection]
+        RAG[RAG assistant]
+        FORECAST[Price forecasting]
+        EVAL[Training and evaluation]
     end
 
-    subgraph AI["AI Services"]
-        VISION["Computer Vision<br/>YOLOv8"]
-        NLP["NLP + RAG<br/>LangChain"]
-        FORECAST["Forecasting<br/>Prophet"]
-        REC["Recommendation<br/>Engine"]
-    end
+    DB[(PostgreSQL)]
+    REDIS[(Redis and queues)]
+    STORE[(Object storage)]
+    CHAPA[Chapa]
+    PROVIDERS[Email and SMS providers]
 
-    subgraph Data["Data Layer"]
-        PG[(PostgreSQL)]
-        TS[(TimescaleDB)]
-        VEC[(pgvector)]
-        CACHE[(Redis)]
-        S3[(MinIO/S3)]
-    end
-
-    subgraph DevOps["DevOps Layer"]
-        DOCKER["Docker"]
-        CI["GitHub Actions"]
-        MONITOR["Prometheus/Grafana"]
-    end
-
-    WEB --> AUTH
-    DASH --> AUTH
-    ADMIN --> AUTH
-    MOBILE --> AUTH
-    
-    AUTH --> VALID
-    VALID --> RATE
-    RATE --> WS
-    
-    WS --> FARM
-    WS --> INDUSTRY
-    WS --> MARKET
-    WS --> NOTIFY
-    WS --> ANALYTICS
-    
-    FARM --> VISION
-    FARM --> NLP
-    INDUSTRY --> FORECAST
-    MARKET --> REC
-    
-    FARM --> PG
-    INDUSTRY --> TS
-    MARKET --> VEC
-    NOTIFY --> CACHE
-    ANALYTICS --> S3
-    
-    DOCKER --> CI
-    CI --> MONITOR
+    WEB --> Platform
+    MOBILE --> Platform
+    Platform --> DB
+    Platform --> REDIS
+    Platform --> AI
+    Platform --> CHAPA
+    Platform --> PROVIDERS
+    AI --> DB
+    AI --> STORE
 ```
 
-### **Request Flow: Disease Detection**
+The browser never calls FastAPI directly. NestJS is the public business boundary; FastAPI is an authenticated internal AI service. Long-running inference, notifications, training, and reconciliation run through queues rather than blocking web requests.
 
-```mermaid
-sequenceDiagram
-    participant Farmer
-    participant Frontend as Next.js
-    participant API as FastAPI
-    participant AI as FastAPI AI
-    participant YOLO as YOLOv8
-    participant DB as PostgreSQL
-    participant S3 as MinIO
+## Documentation
 
-    Farmer->>Frontend: Upload Disease Image
-    Frontend->>API: POST /api/v1/disease/detect
-    API->>API: Validate JWT Token
-    API->>S3: Upload Image
-    S3-->>API: Image URL
-    API->>AI: Forward Request
-    AI->>YOLO: Run Inference
-    YOLO-->>AI: Disease Classified
-    AI->>DB: Save Result
-    AI-->>API: Detection Result
-    API->>API: Add Treatment Info
-    API-->>Frontend: Complete Response
-    Frontend-->>Farmer: Display Diagnosis
-```
+| Document | Purpose |
+|---|---|
+| [01 - Product Overview](docs/01-product-overview.md) | Product vision, users, zones, boundaries, and success measures |
+| [02 - Software Requirements Specification](docs/02-software-requirements-specification.md) | Functional, security, performance, and acceptance requirements |
+| [03 - Software Design Specification](docs/03-software-design-specification.md) | Services, modules, APIs, security flows, and integration design |
+| [04 - Database Design](docs/04-database-design.md) | Entities, columns, relationships, indexes, and state rules |
+| [05 - UI/UX Specification](docs/05-ui-ux-specification.md) | User journeys, accessibility, localization, and frontend security |
+| [06 - AI System](docs/06-ai-system.md) | Model lifecycle, RAG, evaluation, MLOps, and AI safety |
+| [07 - Testing and Quality Assurance](docs/07-testing-and-quality-assurance.md) | Test pyramid, security tests, quality gates, and release evidence |
+| [08 - Deployment and DevOps](docs/08-deployment-and-devops.md) | Environments, containers, CI/CD, secrets, observability, and recovery |
+| [09 - Platform Decision Rule](docs/09-platform-decision-rule.md) | Why NestJS and FastAPI coexist and how migration is controlled |
 
-### **Request Flow: AI Chat Assistant**
+## Repository today
 
-```mermaid
-sequenceDiagram
-    participant Farmer
-    participant Frontend as Next.js
-    participant API as FastAPI
-    participant AI as FastAPI AI
-    participant Vector as pgvector
-    participant LLM as Gemini
-
-    Farmer->>Frontend: Ask Question (Amharic)
-    Frontend->>API: POST /api/v1/assistant/chat
-    API->>API: Validate JWT
-    API->>AI: Forward Query
-    AI->>AI: Generate Embedding
-    AI->>Vector: Search Similar
-    Vector-->>AI: Context Documents
-    AI->>LLM: Generate Response
-    LLM-->>AI: Answer
-    AI->>AI: Translate to Amharic
-    AI-->>API: Response
-    API-->>Frontend: Answer
-    Frontend-->>Farmer: Display
-```
-
----
-
-## ✨ **Features**
-
-### 🌾 **Farmer Zone**
-
-| Feature | Description | Technology | Status |
-|---------|-------------|------------|--------|
-| **Disease Detection** | Upload crop photo → Instant diagnosis → Treatment | YOLOv8 + PyTorch | ✅ Complete |
-| **AI Assistant** | 24/7 farming advice in local languages | LangChain + RAG + Gemini | ✅ Complete |
-| **Price Prediction** | 30-day forecasts with confidence intervals | Prophet + LSTM | ✅ Complete |
-| **Weather Alerts** | Hyperlocal 5-day weather forecasts | OpenWeather API | ✅ Complete |
-| **Cooperative Hub** | Connect with nearby farmers automatically | Recommendation Engine | ✅ Complete |
-
-### ⚙️ **Industry Zone**
-
-| Feature | Description | Technology | Status |
-|---------|-------------|------------|--------|
-| **Factory Feasibility** | Assess crop-to-product manufacturing viability | Decision Engine | ✅ Complete |
-| **Equipment Sourcing** | Connect buyers with local equipment sellers | Marketplace Platform | ✅ Complete |
-| **Quality Control AI** | Automated export-standard product grading | Computer Vision | ✅ Complete |
-| **Cost Calculator** | Manufacturing cost and ROI analysis | Python + Pandas | ✅ Complete |
-| **Energy Optimization** | Solar/biofuel recommendations | Optimization Algorithms | ✅ Complete |
-
-### 🤝 **Market Zone**
-
-| Feature | Description | Technology | Status |
-|---------|-------------|------------|--------|
-| **B2B Marketplace** | Direct farmer-to-processor connections | Next.js + PostgreSQL | ✅ Complete |
-| **Orders Management** | Track and manage marketplace orders | WebSockets | ✅ Complete |
-| **Price Comparison** | Compare local vs imported prices | Web Scraping + ML | ✅ Complete |
-| **Consumer Portal** | Buy local products | Next.js + PWA | ✅ Complete |
-
----
-
-## 📦 **Technology Stack**
-
-### **Frontend**
-
-| Layer | Technology | Purpose |
-|-------|------------|---------|
-| Framework | Next.js 15 + TypeScript | React with SSR |
-| Styling | Tailwind CSS + shadcn/ui | Utility-first UI |
-| State | Zustand + TanStack Query | Client + Server state |
-| Charts | Recharts + D3.js | Data visualization |
-| Maps | Mapbox GL / Leaflet | Location services |
-| Mobile | PWA + React Native | Cross-platform |
-
-### **Backend (FastAPI)**
-
-| Layer | Technology | Purpose |
-|-------|------------|---------|
-| Framework | FastAPI 0.115 | High-performance async API |
-| ORM | SQLAlchemy 2.0 | Type-safe database access |
-| Auth | JWT + bcrypt + httpOnly cookies | Authentication & authorization |
-| Validation | Pydantic 2.0 | Input validation |
-| API Docs | Swagger/OpenAPI | Interactive documentation |
-
-### **AI Services**
-
-| Layer | Technology | Purpose |
-|-------|------------|---------|
-| Vision | YOLOv8 + PyTorch + OpenCV | Object detection |
-| NLP | LangChain + FAISS + Gemini | RAG chatbot |
-| Forecasting | Prophet + LSTM | Time series prediction |
-| MLOps | MLflow + DVC | Model tracking |
-
-### **Database**
-
-| Database | Purpose | Technology |
-|----------|---------|------------|
-| Primary | User data, transactions | PostgreSQL 16 |
-| Time-Series | Price data, forecasts | TimescaleDB |
-| Vector | Embeddings for RAG | pgvector |
-| Cache | Sessions, rate limiting | Redis |
-| Storage | Images, documents | MinIO / S3 |
-
-### **DevOps**
-
-| Layer | Technology | Purpose |
-|-------|------------|---------|
-| Containerization | Docker + Compose | Environment consistency |
-| CI/CD | GitHub Actions | Automated testing & deployment |
-| Monitoring | Prometheus + Grafana | Observability |
-| Logging | ELK Stack | Centralized logging |
-
----
-
-## 📁 **Project Structure**
-
-```
+```text
 agronexus-ai/
-│
-├── backend/                          # 🐍 FastAPI AI Service
-│   ├── app/
-│   │   ├── __init__.py
-│   │   ├── main.py                  # Application entry point
-│   │   ├── database.py              # Database connection & session
-│   │   ├── models/                  # SQLAlchemy ORM models
-│   │   │   ├── user.py              # Unified user model with role
-│   │   │   ├── disease.py
-│   │   │   ├── industry.py
-│   │   │   ├── marketplace.py
-│   │   │   ├── quality.py
-│   │   │   ├── cooperative.py
-│   │   │   └── weather.py
-│   │   ├── schemas/                 # Pydantic schemas
-│   │   │   ├── user.py
-│   │   │   └── auth.py
-│   │   ├── routes/                  # API endpoints
-│   │   │   ├── auth.py
-│   │   │   ├── disease.py
-│   │   │   ├── prices.py
-│   │   │   ├── chat.py
-│   │   │   ├── industry.py
-│   │   │   ├── quality.py
-│   │   │   ├── equipment.py
-│   │   │   ├── marketplace.py
-│   │   │   ├── weather.py
-│   │   │   ├── cooperative.py
-│   │   │   ├── cost_calculator.py
-│   │   │   ├── energy.py
-│   │   │   └── price_comparison.py
-│   │   ├── services/                # Business logic
-│   │   │   ├── auth_service.py
-│   │   │   ├── disease_service.py
-│   │   │   ├── price_service.py
-│   │   │   ├── chat_service.py
-│   │   │   ├── industry_service.py
-│   │   │   ├── quality_service.py
-│   │   │   ├── equipment_service.py
-│   │   │   ├── marketplace_service.py
-│   │   │   ├── weather_service.py
-│   │   │   ├── cooperative_service.py
-│   │   │   ├── cost_calculator_service.py
-│   │   │   ├── energy_service.py
-│   │   │   └── price_comparison_service.py
-│   │   └── utils/
-│   ├── models/                      # Trained ML models
-│   │   └── disease_detection.pt
-│   ├── requirements.txt
-│   ├── Dockerfile
-│   └── .env
-│
-├── frontend/                         # 🎨 Next.js Application
-│   ├── app/
-│   │   ├── page.tsx                 # Landing page
-│   │   ├── auth/                    # Login/Register
-│   │   ├── farmer/                  # Farmer features
-│   │   │   ├── dashboard/
-│   │   │   ├── disease/
-│   │   │   ├── chat/
-│   │   │   └── prices/
-│   │   ├── processor/               # Processor features
-│   │   │   ├── dashboard/
-│   │   │   ├── feasibility/
-│   │   │   ├── quality/
-│   │   │   └── equipment/
-│   │   ├── consumer/                # Consumer features
-│   │   │   └── dashboard/
-│   │   └── marketplace/             # Marketplace
-│   │       ├── page.tsx
-│   │       ├── listings/
-│   │       └── orders/
-│   ├── components/
-│   ├── package.json
-│   ├── next.config.js
-│   ├── tailwind.config.js
-│   └── Dockerfile
-│
-├── data/                             # 📊 Dataset (gitignored)
-│   └── dataset/
-│       ├── disease/
-│       │   ├── images/
-│       │   └── labels/
-│       ├── prices/
-│       └── knowledge/
-│
-├── docs/                             # 📚 Documentation
-├── .github/workflows/               # CI/CD
-├── docker-compose.yml
-├── .env.example
-├── LICENSE
+├── backend/              # Current FastAPI prototype and AI/business routes
+├── frontend/             # Current Next.js application
+├── data/                 # Local datasets and model-related data
+├── docs/                 # Product and engineering specifications
+├── .github/workflows/    # CI foundation
+├── docker-compose.yml    # Local PostgreSQL development services
 └── README.md
 ```
 
----
+The target migration layout is documented in [03 - Software Design Specification](docs/03-software-design-specification.md). It will be introduced incrementally after API contracts and tests are in place.
 
-## 🚀 **Quick Start**
+## Local development: current prototype
 
-### **Prerequisites**
+### Prerequisites
 
-```bash
-Python 3.11+
-Node.js 18+
-Docker & Docker Compose
-Git
-```
+- Python 3.11+
+- Node.js 18+
+- Docker Desktop and Docker Compose
+- Git
 
-### **Clone & Setup**
+### Start the database
 
 ```bash
-git clone https://github.com/TsegayIS122123/agronexus-ai.git
-cd agronexus-ai
-cp .env.example .env
+docker compose up -d postgres
 ```
 
-### **Start Services**
-
-```bash
-docker-compose up -d postgres redis
-sleep 10
-```
-
-### **Backend Setup**
+### Run the current FastAPI backend
 
 ```bash
 cd backend
 python -m venv .venv
-source .venv/bin/activate  # Windows: .venv\Scripts\activate
+
+# Windows PowerShell
+.venv\\Scripts\\Activate.ps1
+
+# Git Bash
+source .venv/Scripts/activate
+
 pip install -r requirements.txt
-python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-### **Frontend Setup**
+### Run the Next.js frontend
 
 ```bash
 cd frontend
@@ -485,262 +174,59 @@ npm install
 npm run dev
 ```
 
-### **Verify Installation**
+Useful local URLs:
 
-```bash
-curl http://localhost:8000/health  # {"status":"healthy"}
-open http://localhost:3000          # Frontend
-open http://localhost:8000/docs    # API Documentation
+- Frontend: `http://localhost:3000`
+- Current FastAPI documentation: `http://localhost:8000/docs`
+- Current health endpoint: `http://localhost:8000/health`
+
+The current prototype uses local configuration and should not be treated as a production deployment. Do not place real provider keys or personal data in the repository.
+
+## Security direction
+
+The production design requires:
+
+- No public self-registration as `admin`
+- Strong startup-validated secrets
+- Short-lived access sessions and rotating refresh tokens
+- HTTP-only secure cookies for web and Bearer-token support for mobile
+- Email verification, password reset, phone OTP, and rate limiting
+- Server-side ownership checks for every order and listing action
+- Chapa server-to-server payment verification and idempotent webhooks
+- Private object storage with signed URLs
+- Append-only audit logs and structured redacted logging
+- Database migrations instead of production `create_all`
+
+These are engineering requirements, not guarantees provided automatically by FastAPI or NestJS.
+
+## Development roadmap
+
+1. Harden the current authentication and authorization behavior.
+2. Add migrations, tests, shared API contracts, and security checks.
+3. Implement the NestJS platform backend for identity and marketplace workflows.
+4. Keep and formalize FastAPI as the internal AI service.
+5. Add Chapa sandbox payments, notification adapters, and reconciliation.
+6. Deploy a tested staging slice with observability and rollback.
+7. Add mobile and offline capabilities after the public API contract is stable.
+
+## Contributing
+
+Use focused branches and conventional commits. Before opening a pull request:
+
+```text
+format -> lint -> type check -> tests -> security scan -> build
 ```
 
----
+Changes should update the relevant document when they alter product behavior, security assumptions, data ownership, or deployment configuration.
 
-## 📚 **API Documentation**
+## Author
 
-### **Authentication**
+**Tsegay Assefa** - AI/ML Engineer and Full-Stack Developer
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/api/v1/auth/register` | Register new user |
-| `POST` | `/api/v1/auth/login` | Login |
+- GitHub: [@TsegayIS122123](https://github.com/TsegayIS122123)
+- LinkedIn: [tsegay-assefa-95a397336](https://linkedin.com/in/tsegay-assefa-95a397336)
+- Email: tsegayassefa27@gmail.com
 
-### **Farmer Zone**
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/api/v1/disease/detect` | Detect disease |
-| `POST` | `/api/v1/assistant/chat` | Chat with AI |
-| `GET` | `/api/v1/prices/forecast` | Price forecast |
-| `GET` | `/api/v1/weather/current` | Weather data |
-
-### **Industry Zone**
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/api/v1/industry/feasibility` | Factory feasibility |
-| `POST` | `/api/v1/quality/grade` | Quality grading |
-| `GET` | `/api/v1/equipment/listings` | Equipment marketplace |
-
-### **Market Zone**
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/api/v1/marketplace/listings` | Product listings |
-| `POST` | `/api/v1/marketplace/orders` | Create order |
-| `GET` | `/api/v1/price-comparison/compare` | Price comparison |
-
----
-
-## 🗄️ **Database Design**
-
-### **ER Diagram**
-
-```mermaid
-erDiagram
-    Users ||--o{ FarmerProfiles : has
-    Users ||--o{ ProcessorProfiles : has
-    Users ||--o{ ConsumerProfiles : has
-    Users ||--o{ DiseaseDetections : has
-    Users ||--o{ ChatHistory : has
-
-    FarmerProfiles ||--o{ Crops : grows
-    ProcessorProfiles ||--o{ MarketListings : creates
-    ProcessorProfiles ||--o{ Products : manufactures
-
-    Crops ||--o{ PriceHistory : has
-    Crops ||--o{ DiseaseDetections : has
-    Crops ||--o{ Predictions : has
-
-    MarketListings ||--o{ Orders : contains
-    Orders ||--o{ Payments : has
-    Products ||--o{ QualityReports : has
-
-    Users {
-        uuid id PK
-        string name
-        string email
-        string phone
-        string password_hash
-        string role
-        string language
-        boolean is_verified
-        timestamp created_at
-        timestamp updated_at
-    }
-
-    FarmerProfiles {
-        uuid user_id PK
-        decimal farm_size
-        string location
-        jsonb crops
-        uuid cooperative_id
-        timestamp created_at
-    }
-
-    ProcessorProfiles {
-        uuid user_id PK
-        string company_name
-        decimal capacity
-        string array crops_accepted
-        string location
-        boolean verified
-        timestamp created_at
-    }
-
-    ConsumerProfiles {
-        uuid user_id PK
-        text address
-        jsonb payment_methods
-        timestamp created_at
-    }
-
-    Crops {
-        uuid id PK
-        string name
-        string variety
-        string season
-        decimal min_price
-        decimal max_price
-        text image_url
-        string array disease_tags
-        timestamp created_at
-    }
-
-    DiseaseDetections {
-        uuid id PK
-        uuid user_id FK
-        uuid crop_id FK
-        text image_url
-        string disease_name
-        decimal confidence
-        text treatment_am
-        text treatment_en
-        text treatment_om
-        text treatment_ti
-        jsonb recommendations
-        timestamp created_at
-    }
-
-    PriceHistory {
-        timestamp time PK
-        uuid crop_id FK
-        string region
-        decimal price
-        string market
-    }
-```
----
-
-## 🤖 **AI Models**
-
-### **1. Disease Detection (YOLOv8)**
-
-| Parameter | Specification |
-|-----------|---------------|
-| **Model** | YOLOv8n (nano) for mobile, YOLOv8m for server |
-| **Dataset** | Custom Ethiopian crop disease dataset |
-| **Classes** | 20+ diseases across 10 crops |
-| **Input** | 640x640 RGB image |
-| **Output** | Bounding boxes, class labels, confidence |
-| **Accuracy Target** | mAP@0.5 > 0.85 |
-| **Inference Speed** | < 100ms on GPU, < 500ms on CPU |
-
-### **2. RAG Chatbot (LangChain + FAISS)**
-
-| Parameter | Specification |
-|-----------|---------------|
-| **Embeddings** | sentence-transformers/all-MiniLM-L6-v2 |
-| **Vector DB** | FAISS / pgvector |
-| **LLM** | Gemini API |
-| **Knowledge Base** | Agricultural manuals, research papers |
-| **Languages** | Amharic, Oromo, Tigrinya, English |
-| **Response Time** | < 2 seconds |
-
-### **3. Price Prediction (Prophet + LSTM)**
-
-| Parameter | Specification |
-|-----------|---------------|
-| **Models** | Prophet + LSTM ensemble |
-| **Features** | Historical prices, season, region, weather |
-| **Forecast Horizon** | 30 days |
-| **Accuracy** | MAPE < 15% |
-
----
-
-## 🚀 **Deployment**
-
-### **Local Development**
-
-```bash
-docker-compose up -d
-```
-
-### **Production Deployment**
-
-```bash
-# Build Docker images
-docker build -t agronexus-backend ./backend
-docker build -t agronexus-frontend ./frontend
-
-# Deploy to:
-# Frontend: Vercel / Netlify
-# Backend: Render.com / Railway / AWS
-# Database: Neon / Supabase / AWS RDS
-# Storage: AWS S3 / Cloudinary / MinIO
-```
-
----
-
-## 🤝 **Contributing**
-
-### **Ways to Contribute**
-
-| Type | Examples |
-|------|----------|
-| **Code** | Bug fixes, features, performance improvements |
-| **Documentation** | README, API docs, tutorials |
-| **Translation** | Amharic, Oromo, Tigrinya translations |
-| **Testing** | Writing tests, reporting bugs |
-| **Data** | Crop disease images, price data |
-| **Feedback** | Feature requests, usability testing |
-
-### **Contribution Process**
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit changes (`git commit -m 'feat: add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
----
-
-## 👤 **Author**
-
-### **Tsegay Assefa**
-
-**AI/ML Engineer | Full-Stack Developer**  
-📍 Addis Ababa, Ethiopia
-
-| Platform | Link |
-|----------|------|
-| **GitHub** | [@TsegayIS122123](https://github.com/TsegayIS122123) |
-| **LinkedIn** | [tsegay-assefa-95a397336](https://linkedin.com/in/tsegay-assefa-95a397336) |
-| **Email** | tsegayassefa27@gmail.com |
-
----
-
-## 📄 **License**
+## License
 
 MIT License
-
----
-
-<p align="center">
-  <b>🌾 From Soil to Shelf, Powered by AI</b><br>
-  <i>Building Ethiopia's Agro-Industrial Future</i>
-</p>
-
-<p align="center">
-  <sub>Made with ❤️ in Addis Ababa, Ethiopia</sub>
-</p>
-

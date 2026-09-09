@@ -8,7 +8,7 @@ class DiseaseDetection(Base):
     __tablename__ = "disease_detections"
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    farmer_id = Column(UUID(as_uuid=True), ForeignKey("farmers.id"), nullable=True)
+    farmer_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     crop_type = Column(String(100), nullable=False)
     image_url = Column(String(500), nullable=True)
     disease_name = Column(String(255), nullable=False)

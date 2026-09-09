@@ -11,33 +11,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      
-      - name: Verify project structure
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install backend dependencies and test tools
         run: |
-          echo "✅ AgroNexus AI CI/CD"
-          echo "📁 Project structure:"
-          ls -la
-          echo ""
-          echo "📁 Backend directory:"
-          ls -la backend/ || echo "Backend directory not found (skipping)"
-          echo ""
-          echo "📁 Frontend directory:"
-          ls -la frontend/ || echo "Frontend directory not found (skipping)"
-          echo ""
-          echo "✅ CI/CD pipeline passed!"
-      
-      - name: Check Python files
-        run: |
-          echo "🐍 Checking Python files..."
-          find backend -name "*.py" -type f 2>/dev/null | head -5
-          echo "✅ Python files found"
-      
-      - name: Check Node.js files
-        run: |
-          echo "📦 Checking Node.js files..."
-          find frontend -name "*.js" -o -name "*.ts" -o -name "*.tsx" 2>/dev/null | head -5
-          echo "✅ Node.js files found"
-      
-      - name: Final
-        run: |
-          echo "🎉 AgroNexus AI CI/CD completed successfully!"
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt pytest
+
+      - name: Run backend hardening tests
+        env:
+          SECRET_KEY: ci-secret-key-that-is-at-least-32-characters
+        run: python -m pytest tests -q
