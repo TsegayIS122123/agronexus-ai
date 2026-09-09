@@ -4,11 +4,30 @@ from datetime import datetime, timedelta
 import os
 from sqlalchemy.orm import Session
 from app.models.user import User  # ← Changed from User
-from app.schemas.user import UserRegister  # ← Changed from UserRegister
+from app.schemas.user import UserRegister
 
-SECRET_KEY = os.getenv("SECRET_KEY", "your-super-secret-key-change-in-production")
+def get_secret_key() -> str:
+    secret_key = os.getenv("SECRET_KEY")
+    if not secret_key or len(secret_key) < 32:
+        raise RuntimeError("SECRET_KEY must be set and contain at least 32 characters")
+    return secret_key
+
+
+SECRET_KEY = get_secret_key()
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 hours
+COOKIE_SECURE = os.getenv("COOKIE_SECURE", "false").lower() == "true"
+
+
+def set_access_cookie(response, token: str) -> None:
+    response.set_cookie(
+        key="access_token",
+        value=token,
+        max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        httponly=True,
+        secure=COOKIE_SECURE,
+        samesite="lax",
+    )
 
 def hash_password(password: str) -> str:
     password_bytes = password.encode('utf-8')

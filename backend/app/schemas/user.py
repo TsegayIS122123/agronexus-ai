@@ -26,8 +26,8 @@ class UserRegister(BaseModel):
     
     @field_validator('role')
     def validate_role(cls, v):
-        if v not in ['farmer', 'processor', 'consumer', 'admin']:
-            raise ValueError('Role must be farmer, processor, consumer, or admin')
+        if v not in ['farmer', 'processor', 'consumer']:
+            raise ValueError('Role must be farmer, processor, or consumer')
         return v
 
 class UserLogin(BaseModel):

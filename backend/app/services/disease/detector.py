@@ -181,6 +181,7 @@ class DiseaseDetector:
                             "disease_name": info["name"],
                             "disease_key": best["key"],
                             "confidence": best["confidence"],
+                            "fallback_mode": False,
                             "treatment": {
                                 "am": info["treatment_am"],
                                 "en": info["treatment_en"],
@@ -193,15 +194,16 @@ class DiseaseDetector:
                 except Exception as e:
                     logger.error(f"Model inference error: {e}")
             
-            # Fallback to smart detection
+            logger.warning("Disease detection fallback_mode: true; trained model returned no supported detection")
             return self._smart_detection(image, crop_type)
             
         except Exception as e:
             logger.error(f"Detection error: {e}")
+            logger.warning("Disease detection fallback_mode: true; model pipeline failed")
             return self._dummy_detection(crop_type)
     
     def _smart_detection(self, image, crop_type):
-        """Smart detection using image analysis"""
+        """Heuristic fallback; never present this as trained-model inference."""
         try:
             if image is not None and isinstance(image, np.ndarray):
                 # Analyze image properties
@@ -228,6 +230,7 @@ class DiseaseDetector:
                 "disease_name": info["name"],
                 "disease_key": selected,
                 "confidence": confidence,
+                "fallback_mode": True,
                 "treatment": {
                     "am": info["treatment_am"],
                     "en": info["treatment_en"],
@@ -239,6 +242,7 @@ class DiseaseDetector:
             }
             
         except Exception as e:
+            logger.warning("Disease detection fallback_mode: true; heuristic pipeline failed")
             return self._dummy_detection(crop_type)
     
     def _dummy_detection(self, crop_type):
@@ -254,6 +258,7 @@ class DiseaseDetector:
             "disease_name": info["name"],
             "disease_key": selected,
             "confidence": round(random.uniform(0.70, 0.95), 2),
+            "fallback_mode": True,
             "treatment": {
                 "am": info["treatment_am"],
                 "en": info["treatment_en"],

@@ -198,10 +198,8 @@ def update_order_status(
     if not order:
         raise ValueError("Order not found")
     
-    # Verify permissions
-    if user_role == "buyer" and order.buyer_id != user_id:
-        raise ValueError("Not authorized")
-    if user_role == "seller" and order.seller_id != user_id:
+    # Authorization is based on the authenticated user's relationship to the order.
+    if str(user_id) not in {str(order.buyer_id), str(order.seller_id)}:
         raise ValueError("Not authorized")
     
     # Status transitions
