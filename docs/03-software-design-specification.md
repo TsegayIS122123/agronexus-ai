@@ -106,7 +106,7 @@ agronexus-ai/
 └── infra/
 ```
 
-The current repository contains the earlier FastAPI prototype under `backend/`. Migration is incremental and follows [09 - Platform Decision Rule](09-platform-decision-rule.md); the directory comments above describe the target ownership, not current implementation status.
+The current repository contains the earlier FastAPI prototype under `ai-service/`. Migration is incremental and follows [09 - Platform Decision Rule](09-platform-decision-rule.md); the directory comments above describe the target ownership, not current implementation status.
 
 ## 4. Domain model
 

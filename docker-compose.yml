@@ -2,16 +2,14 @@ services:
   postgres:
     image: postgres:16-alpine
     container_name: agronexus-postgres
-    environment:
-      POSTGRES_DB: agronexus
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+    env_file:
+      - .env.db
     ports:
       - "5436:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -19,15 +17,37 @@ services:
   pgadmin:
     image: dpage/pgadmin4:latest
     container_name: agronexus-pgadmin
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@agronexus.com
-      PGADMIN_DEFAULT_PASSWORD: admin123
+    env_file:
+      - .env.pgadmin
     ports:
       - "5050:80"
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     volumes:
       - pgadmin_data:/var/lib/pgadmin
+
+  ai-service:
+    build: ./ai-service
+    container_name: agronexus-ai-service
+    ports:
+      - "8000:8000"
+    env_file:
+      - ai-service/.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  backend:
+    build: ./backend
+    container_name: agronexus-backend
+    ports:
+      - "4000:4000"
+    env_file:
+      - backend/.env
+    depends_on:
+      postgres:
+        condition: service_healthy
 
 volumes:
   postgres_data:

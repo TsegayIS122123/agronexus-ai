@@ -3,7 +3,7 @@ import cv2
 import numpy as np
 from pathlib import Path
 
-print("🔄 Creating training dataset in backend/...")
+print("Creating training dataset in ai-service/...")
 
 base = Path("data/dataset")
 
