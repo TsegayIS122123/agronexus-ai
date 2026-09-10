@@ -1,17 +1,16 @@
-FROM python:3.11-slim
+FROM node:18-alpine AS builder
 
 WORKDIR /app
-
-# Install system dependencies for psycopg2
-RUN apt-get update && apt-get install -y \
-    gcc \
-    libpq-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
+COPY package*.json ./
+RUN npm install
 COPY . .
+RUN npm run build
 
-# Use --reload with watchfiles support
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+FROM node:18-alpine
+WORKDIR /app
+ENV NODE_ENV=production
+COPY --from=builder /app/package*.json ./
+RUN npm install --omit=dev
+COPY --from=builder /app/dist ./dist
+EXPOSE 4000
+CMD ["node", "dist/main.js"]

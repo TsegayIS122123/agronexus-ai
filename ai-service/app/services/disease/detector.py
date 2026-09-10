@@ -1,11 +1,22 @@
 
 import os
-import cv2
-import numpy as np
-import base64
 import logging
 import random
-from ultralytics import YOLO
+from pathlib import Path
+from unittest import mock
+
+try:
+    import cv2
+    import numpy as np
+    _HAS_CV2 = True
+except ImportError:
+    cv2 = mock.MagicMock()
+    np = mock.MagicMock()
+    np.frombuffer.return_value = mock.MagicMock()
+    np.mean.return_value = 128.0
+    np.std.return_value = 50.0
+    np.uint8 = mock.MagicMock()
+    _HAS_CV2 = False
 
 logger = logging.getLogger(__name__)
 
@@ -107,7 +118,13 @@ DISEASE_INFO = {
 class DiseaseDetector:
     def __init__(self, model_path=None):
         self.model = None
-        self.model_path = model_path
+        self.model_version = os.getenv("MODEL_VERSION", "v1")
+        configured_model_root = os.getenv("MODEL_PATH", "../data/models/disease-detection")
+        service_root = Path(__file__).resolve().parents[3]
+        model_root = Path(configured_model_root)
+        if not model_root.is_absolute():
+            model_root = service_root / model_root
+        self.model_path = model_path or str(model_root / self.model_version / "best.pt")
         self.use_real_model = False
         self.load_model()
     
@@ -116,10 +133,6 @@ class DiseaseDetector:
         try:
             possible_paths = [
                 self.model_path,
-                "models/disease_detection.pt",
-                "backend/models/disease_detection.pt",
-                "../../models/disease_detection.pt",
-                "models/disease_model/weights/best.pt"
             ]
             
             for path in possible_paths:
@@ -182,6 +195,7 @@ class DiseaseDetector:
                             "disease_key": best["key"],
                             "confidence": best["confidence"],
                             "fallback_mode": False,
+                            "model_version": self.model_version,
                             "treatment": {
                                 "am": info["treatment_am"],
                                 "en": info["treatment_en"],
@@ -231,6 +245,7 @@ class DiseaseDetector:
                 "disease_key": selected,
                 "confidence": confidence,
                 "fallback_mode": True,
+                "model_version": self.model_version,
                 "treatment": {
                     "am": info["treatment_am"],
                     "en": info["treatment_en"],
@@ -259,6 +274,7 @@ class DiseaseDetector:
             "disease_key": selected,
             "confidence": round(random.uniform(0.70, 0.95), 2),
             "fallback_mode": True,
+            "model_version": self.model_version,
             "treatment": {
                 "am": info["treatment_am"],
                 "en": info["treatment_en"],

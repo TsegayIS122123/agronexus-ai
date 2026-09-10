@@ -1,0 +1,22 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-images:
+    name: Build Docker images
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build ai-service image
+        run: docker build -t agronexus/ai-service:latest ai-service/
+
+      - name: Build backend image
+        run: docker build -t agronexus/backend:latest backend/
+
+      - name: Build frontend image
+        run: docker build -t agronexus/frontend:latest frontend/
