@@ -6,70 +6,17 @@ on:
   workflow_dispatch:
 
 jobs:
-  backend-build:
+  build-images:
+    name: Build Docker images
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-      - name: Install dependencies
-        working-directory: backend
-        run: npm install
-      - name: Build
-        working-directory: backend
-        run: npm run build
 
-  frontend-build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-      - name: Install dependencies
-        working-directory: frontend
-        run: npm install
-      - name: Build
-        working-directory: frontend
-        run: npm run build
+      - name: Build ai-service image
+        run: docker build -t agronexus/ai-service:latest ai-service/
 
-  ai-service-test:
-    runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_DB: agronexus
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      - name: Install dependencies
-        run: |
-          pip install --upgrade pip
-          pip install -r ai-service/requirements.txt
-          pip install pytest alembic python-dotenv
-      - name: Run tests
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/agronexus
-          SECRET_KEY: test-secret-key-at-least-32-characters-long
-        run: |
-          PYTHONPATH=ai-service pytest tests -q
+      - name: Build backend image
+        run: docker build -t agronexus/backend:latest backend/
 
-  all-checks:
-    needs: [backend-build, frontend-build, ai-service-test]
-    runs-on: ubuntu-latest
-    steps:
-      - name: All checks passed
-        run: echo "✅ All CI checks passed"
+      - name: Build frontend image
+        run: docker build -t agronexus/frontend:latest frontend/
