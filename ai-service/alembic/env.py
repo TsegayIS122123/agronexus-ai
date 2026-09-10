@@ -1,34 +1,42 @@
 from logging.config import fileConfig
+from sqlalchemy import engine_from_config, pool
+from alembic import context
 import os
 import sys
+from pathlib import Path
+from dotenv import load_dotenv
 
-from alembic import context
-from sqlalchemy import engine_from_config, pool
+# Load .env from ai-service/
+env_path = Path(__file__).resolve().parent.parent / ".env"
+if env_path.exists():
+    load_dotenv(env_path)
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+# Add app to path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from app.database import Base
-from app.models import chat, cooperative, disease, industry, marketplace, prediction, product_data, quality, standard_data, user  # noqa: F401,E501
+from app.models import user, disease, chat, cooperative, industry, marketplace, prediction, quality
 
 config = context.config
+
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-url = os.getenv("DATABASE_URL")
-if url:
-    config.set_main_option("sqlalchemy.url", url.replace("%", "%%"))
+# Override sqlalchemy.url from env
+DATABASE_URL = os.getenv("DATABASE_URL")
+if DATABASE_URL:
+    config.set_main_option("sqlalchemy.url", DATABASE_URL)
 
 target_metadata = Base.metadata
 
 
 def run_migrations_offline() -> None:
+    url = config.get_main_option("sqlalchemy.url")
     context.configure(
-        url=config.get_main_option("sqlalchemy.url"),
+        url=url,
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
-        compare_type=True,
     )
     with context.begin_transaction():
         context.run_migrations()
@@ -41,7 +49,7 @@ def run_migrations_online() -> None:
         poolclass=pool.NullPool,
     )
     with connectable.connect() as connection:
-        context.configure(connection=connection, target_metadata=target_metadata, compare_type=True)
+        context.configure(connection=connection, target_metadata=target_metadata)
         with context.begin_transaction():
             context.run_migrations()
 
