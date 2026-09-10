@@ -124,7 +124,7 @@ The browser never calls FastAPI directly. NestJS is the public business boundary
 
 ```text
 agronexus-ai/
-├── backend/              # Current FastAPI prototype and AI/business routes
+├── ai-service/           # Current FastAPI prototype and AI/business routes
 ├── frontend/             # Current Next.js application
 ├── data/                 # Local datasets and model-related data
 ├── docs/                 # Product and engineering specifications
@@ -153,7 +153,7 @@ docker compose up -d postgres
 ### Run the current FastAPI backend
 
 ```bash
-cd backend
+cd ai-service
 python -m venv .venv
 
 # Windows PowerShell
