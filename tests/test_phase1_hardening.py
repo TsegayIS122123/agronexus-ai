@@ -5,12 +5,12 @@ from pydantic import ValidationError
 from types import SimpleNamespace
 from uuid import uuid4
 from pathlib import Path
+from unittest.mock import patch
 
-from backend.app.schemas.user import UserRegister
-from backend.app.services.auth_service import create_access_token, get_secret_key, set_access_cookie
-from backend.app.services.marketplace_service import update_order_status
-from backend.app.services.disease.detector import DiseaseDetector
-from backend.app.services.role_guard import get_current_user
+from app.schemas.user import UserRegister
+from app.services.auth_service import create_access_token, get_secret_key, set_access_cookie
+from app.services.marketplace_service import update_order_status
+from app.services.role_guard import get_current_user
 
 
 def valid_registration(**overrides):
@@ -106,18 +106,25 @@ def test_order_status_rejects_non_owner_even_with_marketplace_role():
 
 
 def test_database_schema_is_migration_managed():
-    main_source = Path("backend/app/main.py").read_text(encoding="utf-8")
-    migration_files = list(Path("backend/alembic/versions").glob("*.py"))
+    main_source = Path("ai-service/app/main.py").read_text(encoding="utf-8")
+    migration_files = list(Path("ai-service/alembic/versions").glob("*.py"))
 
     assert "create_all" not in main_source
     assert migration_files
 
 
 def test_disease_heuristic_fallback_is_explicit():
+    from app.services.disease.detector import DiseaseDetector
+
     detector = DiseaseDetector.__new__(DiseaseDetector)
+    detector.model_version = "v1"
+    detector.model = None
+    detector._HAS_CV2 = False
+
     result = detector._smart_detection(None, "teff")
 
     assert result["fallback_mode"] is True
+    assert result["model_version"] == "v1"
 
 
 def test_login_cookie_round_trip_authorizes_current_user():

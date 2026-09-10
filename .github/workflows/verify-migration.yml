@@ -1,0 +1,55 @@
+name: Verify migration
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'ai-service/**'
+      - 'alembic.ini'
+      - '.github/workflows/verify-migration.yml'
+
+jobs:
+  verify-migration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: agronexus
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5436:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install repo venv dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r ai-service/requirements.txt pytest python-jose[cryptography] email-validator bcrypt psycopg2-binary mako
+
+      - name: Run alembic upgrade head
+        working-directory: ai-service
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5436/agronexus
+          SECRET_KEY: ci-secret-key-that-is-at-least-32-characters
+        run: |
+          python -m alembic upgrade head
+
+      - name: Run backend test suite
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5436/agronexus
+          SECRET_KEY: ci-secret-key-that-is-at-least-32-characters
+        run: |
+          PYTHONPATH=ai-service python -m pytest tests -q

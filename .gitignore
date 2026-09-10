@@ -43,13 +43,11 @@ logs/
 *.pid
 docker-compose.override.yml
 
-# YOLO Models
+# YOLO model binaries (keep versioned model folders tracked where intended)
 *.pt
 *.onnx
 *.engine
 *.weights
-models/
-data/
 runs/
 
 # Training artifacts
@@ -57,3 +55,9 @@ runs/
 *.log
 *.jpg
 *.pngpatches/
+
+# Repo verification, convenience, and CI scripts are tracked.
+# Only live secrets and runtime artifact folders stay ignored.
+.env
+.env.local
+.env.production

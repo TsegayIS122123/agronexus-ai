@@ -45,6 +45,7 @@ def detect_disease(db: Session, farmer_id, crop_type, image_data, language="am")
                 "disease_name": result["disease_name"],
                 "confidence": result["confidence"],
                 "fallback_mode": result.get("fallback_mode", True),
+                "model_version": result.get("model_version"),
                 "treatment": result["treatment"].get(language, result["treatment"]["en"]),
                 "recommendations": result.get("recommendations", []),
                 "similar_cases": result.get("similar_cases", 0),
