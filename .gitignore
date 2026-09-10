@@ -61,3 +61,7 @@ runs/
 .env
 .env.local
 .env.production
+
+# Local dev-only credential files (not secrets, but never track)
+.env.db
+.env.pgadmin
