@@ -1,9 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.services.auth_service import get_secret_key
+from app.core.config import get_settings
 
-# Fail before route imports if required security configuration is invalid.
-get_secret_key()
+# Validate configuration before importing routes, so a missing or weak
+# SECRET_KEY fails here with an actionable message instead of on first request.
+settings = get_settings()
 
 from app.routes import (
     auth, disease, prices, chat, industry, quality,
@@ -19,7 +20,7 @@ app = FastAPI(
 # CORS configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:3001"],
+    allow_origins=settings.cors_origin_list,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

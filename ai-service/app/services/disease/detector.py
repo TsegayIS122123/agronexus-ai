@@ -5,6 +5,15 @@ import random
 from pathlib import Path
 from unittest import mock
 
+from app.core.config import get_settings
+
+try:
+    from ultralytics import YOLO
+    _HAS_ULTRALYTICS = True
+except ImportError:
+    YOLO = None
+    _HAS_ULTRALYTICS = False
+
 try:
     import cv2
     import numpy as np
@@ -118,8 +127,9 @@ DISEASE_INFO = {
 class DiseaseDetector:
     def __init__(self, model_path=None):
         self.model = None
-        self.model_version = os.getenv("MODEL_VERSION", "v1")
-        configured_model_root = os.getenv("MODEL_PATH", "../data/models/disease-detection")
+        settings = get_settings()
+        self.model_version = settings.model_version
+        configured_model_root = settings.model_path
         service_root = Path(__file__).resolve().parents[3]
         model_root = Path(configured_model_root)
         if not model_root.is_absolute():
@@ -131,6 +141,9 @@ class DiseaseDetector:
     def load_model(self):
         """Load YOLOv8 model for real detection"""
         try:
+            if not _HAS_ULTRALYTICS:
+                raise ModuleNotFoundError("ultralytics is not installed")
+
             possible_paths = [
                 self.model_path,
             ]

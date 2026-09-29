@@ -1,9 +1,9 @@
 import logging
-import os
 from typing import List, Dict, Optional
 from datetime import datetime
 from sqlalchemy.orm import Session
 
+from app.core.config import get_settings
 from app.models.chat import ChatSession, ChatMessage
 
 logger = logging.getLogger(__name__)
@@ -19,7 +19,7 @@ except ImportError as e:
     LANGCHAIN_AVAILABLE = False
     logger.warning(f"⚠️ LangChain not available: {e}. Using fallback responses.")
 
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+GEMINI_API_KEY = get_settings().gemini_api_key
 
 # Simple knowledge base for fallback
 KNOWLEDGE_BASE = {

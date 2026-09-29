@@ -1,16 +1,10 @@
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-import os
-from dotenv import load_dotenv
+from app.core.config import get_database_url
 
-load_dotenv()
-
-# PostgreSQL connection with port 5436
-DATABASE_URL = os.getenv(
-    "DATABASE_URL", 
-    "postgresql://postgres:postgres@localhost:5436/agronexus"
-)
+# PostgreSQL connection with port 5436 by default
+DATABASE_URL = get_database_url()
 
 # Create engine with connection pooling
 engine = create_engine(

@@ -1,19 +1,13 @@
 from logging.config import fileConfig
 from sqlalchemy import engine_from_config, pool
 from alembic import context
-import os
 import sys
 from pathlib import Path
-from dotenv import load_dotenv
-
-# Load .env from ai-service/
-env_path = Path(__file__).resolve().parent.parent / ".env"
-if env_path.exists():
-    load_dotenv(env_path)
 
 # Add app to path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from app.core.config import get_database_url
 from app.database import Base
 from app.models import user, disease, chat, cooperative, industry, marketplace, prediction, quality
 
@@ -23,9 +17,7 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 # Override sqlalchemy.url from env
-DATABASE_URL = os.getenv("DATABASE_URL")
-if DATABASE_URL:
-    config.set_main_option("sqlalchemy.url", DATABASE_URL)
+config.set_main_option("sqlalchemy.url", get_database_url())
 
 target_metadata = Base.metadata
 

@@ -1,10 +1,9 @@
 from fastapi import HTTPException, Depends, Request
 from jose import JWTError, jwt
 from sqlalchemy.orm import Session
-import os
+from app.core.config import get_secret_key, get_settings
 from app.models.user import User
 from app.database import get_db
-from app.services.auth_service import ALGORITHM, SECRET_KEY
 
 def get_current_user(request: Request, db: Session = Depends(get_db)):
     """Get current user from JWT token in httpOnly cookie"""
@@ -13,7 +12,11 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
         if not token:
             raise HTTPException(status_code=401, detail="Not authenticated")
         
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(
+            token,
+            get_secret_key(),
+            algorithms=[get_settings().algorithm],
+        )
         user_id = payload.get("sub")
         if user_id is None:
             raise HTTPException(status_code=401, detail="Invalid token")

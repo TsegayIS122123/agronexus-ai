@@ -1,22 +1,18 @@
 import bcrypt
 from jose import jwt
 from datetime import datetime, timedelta
-import os
 from sqlalchemy.orm import Session
-from app.models.user import User  # ← Changed from User
+from app.core.config import get_secret_key, get_settings
+from app.models.user import User
 from app.schemas.user import UserRegister
 
-def get_secret_key() -> str:
-    secret_key = os.getenv("SECRET_KEY")
-    if not secret_key or len(secret_key) < 32:
-        raise RuntimeError("SECRET_KEY must be set and contain at least 32 characters")
-    return secret_key
+settings = get_settings()
 
-
-SECRET_KEY = get_secret_key()
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 hours
-COOKIE_SECURE = os.getenv("COOKIE_SECURE", "false").lower() == "true"
+# Re-exported from app.core.config so existing importers keep working. The
+# signing key is resolved per call by get_secret_key(), not frozen at import,
+# so a rotated SECRET_KEY is honoured without a restart.
+ACCESS_TOKEN_EXPIRE_MINUTES = settings.access_token_expire_minutes
+COOKIE_SECURE = settings.cookie_secure
 
 
 def set_access_cookie(response, token: str) -> None:
@@ -50,7 +46,7 @@ def create_access_token(data: dict):
     to_encode.update({"exp": expire})
     if "role" not in to_encode:
         to_encode["role"] = "farmer"
-    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return jwt.encode(to_encode, get_secret_key(), algorithm=settings.algorithm)
 
 def register_user(db: Session, user_data: UserRegister):
     # Check if email exists

@@ -1,15 +1,15 @@
 import logging
 import requests
-import os
-from typing import Dict, List, Optional
-from datetime import datetime, timedelta
-from sqlalchemy.orm import Session
-from app.models.weather import WeatherData
+from typing import Dict, List
+from datetime import datetime
+from app.core.config import get_settings
 
 logger = logging.getLogger(__name__)
 
+settings = get_settings()
+
 # OpenWeather API Key (set in .env)
-OPENWEATHER_API_KEY = os.getenv("OPENWEATHER_API_KEY", "")
+OPENWEATHER_API_KEY = settings.openweather_api_key
 
 # Ethiopian cities with coordinates
 ETHIOPIAN_CITIES = {
