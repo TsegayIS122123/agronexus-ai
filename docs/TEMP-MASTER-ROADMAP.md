@@ -2,8 +2,8 @@
 
 > Working document, not part of the numbered 01–09 set. Tracks where the project
 > actually stands across documentation, security, structure, features, and deployment.
-> Update the status column as phases complete; delete once Phase 8 is done and the
-> numbered docs alone are sufficient to onboard someone new.
+> Update the status column as phases complete; delete once the numbered docs alone are
+> sufficient to onboard someone new.
 
 ## How to read this
 
@@ -12,165 +12,231 @@
 - **Status: In Progress** — started, not fully verified yet.
 - **Status: Not started** — nothing built yet.
 
----
-
-## Phase 0 — Documentation Foundation
-**Status: Done**
-
-- Docs 01–09 written (product overview, SRS, SDS, database design, UI/UX spec, AI
-  system spec, testing/QA, deployment/DevOps, platform decision rule).
-- Doc 02 rewritten to remove route/flow duplication; canonical route reference lives in
-  doc 03 instead.
-- README rewritten with honest Implemented/In Progress/Planned status per capability.
-
-## Phase 1 — Security Hardening (current FastAPI backend)
-**Status: Done**
-
-- Public registration no longer accepts `role=admin`.
-- `SECRET_KEY` has no fallback; app fails to start if missing or too short.
-- Login/registration set the `access_token` cookie the auth guard actually reads
-  (`SameSite=Lax`, `Secure` via `COOKIE_SECURE`).
-- Order status authorization checks actual `buyer_id`/`seller_id`, not role names.
-- `Base.metadata.create_all()` removed; Alembic migrations added, initial migration
-  generated and verified against a clean database.
-- Disease detection fallback path (`_smart_detection()`) explicitly flagged
-  `fallback_mode: true/false` in the API response and logs — no more silent fabricated
-  diagnoses.
-- Real pytest suite (12 tests) covering all of the above; CI runs it instead of
-  echo-only checks.
-
-## Phase 2 — Repository Reorganization
-**Status: Done**
-
-- [x] **A — Data & model directories.** Weights live at
-      `data/models/disease-detection/v1/` (`best.pt` gitignored, `metrics.json`
-      and `model_card.md` tracked). `MODEL_PATH` and `MODEL_VERSION` drive the
-      detector; `data/dataset/disease/{images,labels}/{train,val,test}` unchanged.
-- [x] **B — Backend core config.** `ai-service/app/core/config.py` is the single
-      validated env surface; all five previous `os.getenv` call sites
-      (`database.py`, `auth_service.py`, `chat_service.py`, `weather_service.py`,
-      `disease/detector.py`) plus `alembic/env.py` now read from it. The dead
-      `app.models.weather` import was confirmed to be breaking startup —
-      `main.py` includes the weather router, so the whole service failed to
-      import — and is removed. No separate `ai/` folder, per doc 09.
-- [x] **C — Frontend feature reorganization.** `features/{auth,farmer,
-      processor,consumer,marketplace}/` with shared `components/` and `lib/theme.ts`.
-      Note: the `features/*/api.ts` layer calls `lib/api-client.ts` with paths
-      that omit the `/api/v1` prefix and are not imported by any component yet.
-      Migrating the live `axios` call sites onto that layer is still outstanding.
-- [x] **D — Env alignment.** `ai-service/.env.example` and
-      `frontend/.env.example` both document the current surface, with
-      `# Planned — not yet used` sections for Chapa/email/SMS. `REDIS_URL` is
-      deliberately absent until Redis exists in `docker-compose.yml`.
-- [x] **E — CI check.** `verify-migration.yml` runs `alembic upgrade head`
-      against a real Postgres and then pytest; `ci.yml` already builds the
-      NestJS scaffold and the Next.js app. The migration path was adjusted so
-      `alembic` no longer needs a `SECRET_KEY` to import `app.database`.
-
-**Follow-ups carried out of Phase 2, worth recording:**
-
-- `weather_service.py` had a dead `from app.models.weather import WeatherData`
-  (no such module). Because `main.py` includes the weather router, this raised
-  `ImportError` at startup — the API could not boot at all.
-- `detector.py` called `YOLO(...)` without ever importing it. The `NameError`
-  was swallowed by a broad `except`, so the trained weights never loaded and
-  every diagnosis fell through to the randomized fallback. The guard now
-  mirrors the existing `cv2`/`numpy` handling.
-- `ALGORITHM` became operator-controlled as a side effect of the migration, so
-  it is now validated against an HMAC allowlist; `none` is rejected.
-- The signing key is read per request rather than frozen at import, so rotating
-  `SECRET_KEY` invalidates outstanding tokens without a restart.
-
-
-## Phase 3 — Identity & Notifications
-**Status: Not started**
-
-- Email verification: real send via a provider (Resend, or log-only in dev mode),
-  hashed single-use token, expiry, `/verify-email` flow.
-- Password reset: same token pattern, generic response regardless of whether the email
-  exists, 15–30 min expiry.
-- SMS OTP: provider chosen (Telnyx primary, confirm actual Ethiopia delivery before
-  committing; Vonage as fallback), hashed code, attempt limit.
-- Notification sending is asynchronous — FastAPI `BackgroundTasks` or Celery is
-  acceptable here as an interim step; full BullMQ/Celery split per doc 03 happens after
-  the NestJS migration starts (Phase 5), not before.
-- New tables: `email_verification_tokens`, `password_reset_tokens`, `otp_challenges`
-  (already specified in doc 04).
-
-## Phase 4 — Marketplace Correctness & Chapa Payments
-**Status: Not started**
-
-- Convert `Float` price/quantity columns to `NUMERIC(12,2)` — flagged in the original
-  code audit, not yet fixed.
-- Add `payments` and `payment_events` tables (doc 04).
-- Chapa sandbox integration: `initialize` → redirect → webhook → server-side `verify`
-  → idempotent order state update. Never trust a client redirect alone.
-- Order total always computed server-side from listing price at order time
-  (`unit_price_at_purchase`), never from client input.
-- Tests: duplicate webhook produces one state change; forged/stale webhook does not
-  mark an order paid (per doc 07 §3).
-
-## Phase 5 — NestJS Migration (start)
-**Status: Not started**
-
-Per doc 09's migration order — do not reorder these:
-
-1. Shared API contract + environment configuration between NestJS and FastAPI.
-2. Auth, users, roles, sessions, audit logs move to NestJS first.
-3. Marketplace listings and orders.
-4. Payments and notifications.
-5. WebSocket events.
-6. AI gateway: NestJS calls FastAPI internally via a signed service token; the browser
-   never calls FastAPI directly (doc 03 §3).
-7. Retire the duplicated FastAPI business routes only after parity tests pass — the
-   FastAPI auth/marketplace routes stay live until their NestJS replacements are proven
-   equivalent, not before.
-
-**Do not start this phase until Phases 3–4 are done on the current FastAPI backend.**
-Migrating unfinished or unhardened features just relocates the same gaps into a second
-codebase.
-
-## Phase 6 — AI System Maturity
-**Status: Not started**
-
-- RAG: replace the hardcoded `KNOWLEDGE_BASE` dict with a real document store and
-  actual retrieval (FAISS or pgvector) before generation — currently the chat path
-  skips retrieval entirely (per the last audit).
-- Model versioning/logging made consistent across disease detection, price forecasting,
-  and chat — not just partially present as found in the audit.
-- First real evaluation report for the disease model: precision/recall/mAP on a held-out
-  set, committed as `metrics.json` + `model_card.md` (Phase 2A already prepares the
-  folder for this).
-- Price forecasting: confirm data freshness/provenance, add the naive baseline
-  comparison doc 06 requires before trusting Prophet's numbers.
-
-## Phase 7 — Testing & CI Maturity
-**Status: Not started**
-
-- Expand beyond the 12 hardening tests: integration tests against a real (dockerized)
-  Postgres, contract tests once NestJS↔FastAPI exists, E2E for register→detect→list→
-  order→pay.
-- Frontend test suite (currently zero, per audit) — start with the auth and checkout
-  flows, not full coverage.
-- Security scan step in CI (dependency + secret scanning), per doc 08 §5.
-
-## Phase 8 — Deployment
-**Status: Not started**
-
-- Staging environment matching doc 08's topology (Next.js, NestJS, FastAPI, Postgres,
-  Redis, Chapa sandbox).
-- Production secrets via a secret manager, never the repo.
-- Health/readiness checks, structured logging, basic alerting (payment verification
-  failures, repeated auth failures).
-- Deployment acceptance checklist from doc 08 §8 run once, in full, before calling
-  anything "deployed."
+> **Architectural note:** the phase order below was re-derived from a full repo audit.
+> The old Phase 0–8 sequence has been superseded. Frontend core layout, secure-auth UI
+> wiring, and API-layer migration now come before AI maturity and the NestJS migration,
+> because the current prototype cannot be hardened piecemeal until the presentation and
+> integration layers are consistent.
 
 ---
 
-## What to push right now (end of Phase 2, start of Phase 3)
+## Phase A — Global Layout Foundations
+**Status: Not started**
 
-Phases 0, 1, and 2 are complete. The FastAPI service boots, `alembic upgrade
-head` runs against a clean database, and `pytest` passes. The next unit of work
-is Phase 3 — identity and notifications — not the NestJS migration, which stays
-blocked until Phases 3 and 4 land on the current backend.
+Establish the universal presentation primitives that every page will share. Until this
+phase lands, each page owns its own header, footer, navigation, and styling tokens, which
+is the root cause of the current inconsistency.
+
+- [ ] **Shared root layout.** `frontend/app/layout.tsx` gets a persistent universal header,
+      universal footer, and a react-context-backed navigation state. Every render surface
+      (public pages and protected role pages) uses the same layout shell.
+- [ ] **Universal accessible header.** Contextual per-role header component with:
+      - skip-to-main link first in tab order,
+      - semantic `<header>`/`<nav>`/`<main>`/`<footer>` landmarks,
+      - `aria-current` on the active route,
+      - mobile hamburger menu with focus trap and Esc dismissal,
+      - locale/language selector wired to the same state the backend uses.
+- [ ] **Universal accessible footer.** One shared footer with consistent links, contact info,
+      and legal text; identical on every route.
+
+- [ ] **Responsive navigation system.** One navigation model shared across public and role
+      pages. Role-specific links are injected from the same source of truth, not copy-pasted
+      into each page.
+- [ ] **Tailwind design tokens.** Extend `frontend/tailwind.config.js` with a documented
+      token set: color palette (including role colors already in `lib/theme.ts` but not in
+     Tailwind config), spacing scale, font-size/line-height scale, and semantic color keys
+      (e.g. `color: primary`, `color: surface`, `color: text/on-surface`) so components stop
+      hardcoding raw Tailwind values.
+- [ ] **Standardized accessible button system.** One set of `<Button>` / `<LinkButton>` primitives
+      (sizes, variants, loading/disabled/icon states) used everywhere, including focus-visible
+      styles and disabled behavior.
+- [ ] **Typography scale.** Documented type scale applied consistently across headings, body,
+      captions, and form labels. No per-page magic numbers.
+- [ ] **Accessibility baseline.** Every new layout and component must pass a manual check for:
+      keyboard navigation, focus order, color contrast, form label association, and screen-reader
+      text. WCAG 2.1 AA is the target; violations block the PR.
+
+**Exit criteria:** any new page added after this phase uses the shared layout shell and tokens
+instead of rebuilding header/footer/nav from scratch.
+
+## Phase B — Hardened Secure Authentication & Onboarding UI
+**Status: Not started**
+
+Wire the existing secure FastAPI auth backend to the frontend through the centralized API
+layer, and remove the insecure client-side token handling that the current pages use.
+
+- [ ] **Consolidate session state.** Remove `localStorage` token storage from all pages. The
+      frontend session model must match the backend: the `access_token` lives in the HTTP-only
+      cookie that FastAPI sets; the browser does not read or write it from JS. A client-side
+      auth hook/context reads user identity from a protected endpoint or from the cookie-safe
+      proxy, not from `localStorage`.
+- [ ] **Migrate auth pages to `lib/api-client`.** `features/auth/LoginPage` and `RegisterPage`
+      currently call raw `axios` and manually set cookies. Rewrite them to use `features/auth/api.ts`
+      (which already exists and uses `lib/api-client`) so the call sites go through the shared
+      HTTP layer.
+- [ ] **Registration flow alignment.** Ensure the registration UI enforces the same role validation
+      the backend now requires (only `farmer`, `processor`, `consumer`; admin provisioning is
+      server-side) and surfaces backend validation errors through the shared error formatter.
+- [ ] **Post-login routing.** After a successful login/register, route the user to the correct
+      role dashboard using the server-validated role, not a client guess. The current pages write
+      a `user_role` cookie manually — remove that and rely on the backend session.
+- [ ] **Protected route wrapper.** Add a reusable protected-route component/hoc that checks the
+      session and redirects to login with a return URL, so every role dashboard stops repeating
+      its own auth check.
+- [ ] **Logout.** One shared logout action that clears the session through the API layer and
+      returns the user to a known public route.
+
+**Exit criteria:** login, register, and logout flow through the centralized API client; no
+auth page writes tokens to `localStorage`; role-based routing reflects the server-provided role.
+
+## Phase C — API Migration (Raw Axios → Feature API Modules)
+**Status: Not started**
+
+Move every scattered `axios` call in `features/` onto the existing per-feature API modules and
+the shared `lib/api-client`, so the frontend has one approved way to talk to the backend.
+
+- [ ] **Audit call sites.** The audit found raw `axios` imports and calls in:
+      `features/auth/RegisterPage`, `features/auth/LoginPage`, `features/farmer/DiseasePage`,
+      `features/farmer/ChatPage`, `features/farmer/PricesPage`, `features/processor/QualityPage`,
+      `features/processor/FeasibilityPage`, `features/processor/EquipmentPage`,
+      `features/marketplace/MarketplacePage`, `features/marketplace/NewListingPage`,
+      `features/marketplace/OrdersPage`, `features/marketplace/ListingDetailPage`, and likely more.
+      Official count from the audit: ~46 raw axios call sites.
+- [ ] **Finish the feature API modules.** The `features/*/api.ts` files already exist and use
+      `lib/api-client`, but many of them are incomplete or define interfaces that don't match the
+      real backend responses. Bring each module up to date with the actual backend contract before
+      the pages switch to them.
+- [ ] **Migrate pages one feature area at a time.** Replace raw `axios` imports with the matching
+      `features/<area>/api.ts` exports. Keep behavior identical during the migration; do not refactor
+      UI logic and API calls in the same PR.
+- [ ] **Normalize path handling.** `lib/api-client` already builds URLs from the browser origin, but
+      some feature modules still use ad-hoc paths (for example `/api/disease/...` vs
+      `/api/v1/disease/...`). Pick one convention and make every API module consistent.
+- [ ] **Shared error handling.** Route all backend errors through one frontend error surface (toast/
+      inline message/modal) instead of per-page `setError(...)` fragments, so accessibility and
+      i18n of errors is consistent.
+
+**Exit criteria:** no feature page imports `axios` directly; every backend call goes through
+`lib/api-client` via a per-feature API module; the modules are imported and exercised by real
+components.
+
+## Phase D — Backend-to-Frontend Service Coupling & Integration
+**Status: Not started**
+
+Make the presentation layer and the backend behave like one integrated system rather than two
+halves that happen to share URLs.
+
+- [ ] **Single API base contract.** Ensure Next.js rewrites/proxy, `lib/api-client`, and the feature
+      modules all agree on the base path and credential handling, so developers cannot accidentally
+      bypass the proxy and hit FastAPI directly from the browser.
+- [ ] **Role-aware UI from one source of truth.** Role colors already exist in `lib/theme.ts`, but the
+      Tailwind config does not know about them and pages recompute role styling independently. Wire
+      the theme tokens into Tailwind so role-based surfaces come from the same tokens everywhere.
+- [ ] **Consistent loading, empty, and error states.** Each feature area currently renders its own
+      loading/empty/error UI. Introduce shared patterns (or at least shared contracts) so the user
+      sees one visual language for "loading", "no data", and "error" across dashboards.
+- [ ] **Form and input consistency.** Forms already use broadly similar Tailwind classes, but labels,
+      required indicators, validation styling, and helper text are inconsistent. Align them behind
+      shared form components as part of Phase A/B so accessibility improves everywhere at once.
+- [ ] **Auth guard parity.** Verify that the frontend protected routes and the backend role guards
+      agree on what each role can see and do. The audit found the frontend sometimes decides
+      visibility by local role state; the backend must remain the final authority.
+
+**Exit criteria:** a new feature page can be built by composing shared layout, shared form/feedback
+primitives, and a feature API module, without reintroducing raw axios or copy-pasted header/footer
+logic.
+
+## Phase E — Advanced AI Services (Production YOLO + Real RAG)
+**Status: Not started**
+
+Replace the prototype AI paths that currently fabricate or shortcut results with real, evaluated,
+and observable AI behavior.
+
+- [ ] **Disease detection — load the real model confidently.** `detector.py` still falls through to
+      the heuristic/dummy path in the normal case. Fix the model-loading guard so the trained weights
+      actually load, add clear startup logging, and fail the service loudly if the expected model is
+      missing rather than silently pretending.
+- [ ] **Disease detection — evaluation.** Produce a real evaluation report (precision/recall/mAP) on a
+      held-out set and commit `metrics.json` + `model_card.md` in
+      `data/models/disease-detection/v1/`. This is the first truthful measure of model quality; until
+      it exists the fallback behavior is the de-facto production behavior.
+- [ ] **RAG — replace the hardcoded knowledge base.** `chat_service.py` currently matches keywords in a
+      static `KNOWLEDGE_BASE` dict and otherwise calls Gemini with no retrieved context. Add a real
+      document store and retrieval step (FAISS or pgvector) so the assistant answers from approved,
+      non-expired knowledge documents as specified in doc 04 §4.25 and doc 06.
+- [ ] **Price forecasting — provenance and baseline.** Confirm the Prophet input data source/freshness
+      and add the naive baseline comparison doc 06 requires before the numbers are treated as
+      trustworthy.
+- [ ] **AI safety and review signals.** Ensure low-confidence detections are flagged for review and that
+      the frontend can represent `fallback_mode` / confidence honestly instead of presenting every
+      result as authoritative.
+
+**Exit criteria:** the disease endpoint no longer depends on fabricated fallback as the common path,
+and the chat assistant retrieves from a real knowledge source before generating.
+
+## Phase F — Production Infrastructure (DB Tuning, Numeric Migrations, Containerization)
+**Status: Not started**
+
+Make the data layer and runtime match the design documents and the demands of real usage.
+
+- [ ] **Money/quantity type migration.** Convert `Float` price and quantity columns to the types doc 04
+      specifies (`NUMERIC(12,2)` for quantities; integer minor units for money where the design calls
+      for it). This affects `marketplace_listings`, `marketplace_orders`, `equipment_listings`,
+      `feasibility_reports`, `product_specs`, `price_history`, and others. This is a schema migration,
+      not a cosmetic change — plan data conversions and backfill explicitly.
+- [ ] **Schema alignment with doc 04.** Bring current models and migrations toward the documented
+      contract: soft deletes, token tables, notifications, audit logs, and the other tables already
+      specified but not yet created.
+- [ ] **Database tuning.** Add the indexes called out in doc 04, review query patterns on hot paths
+      (marketplace listings, orders, price forecast), and partition/time-scale the price time-series
+      table as usage grows.
+- [ ] **Containerization & runtime hardening.** Make `docker-compose.yml` and the service Dockerfiles
+      reflect the real runtime: correct ports, health checks, dependency ordering, and any missing
+      infra (for example Redis where the design expects it). Keep secrets out of the repo.
+- [ ] **Observability baseline.** Add structured logging and basic health/readiness surfaces so the
+      platform can be operated beyond local development.
+
+**Exit criteria:** money/quantity data is stored in safe types, the running schema matches the design
+document, and the containerized local stack is a truthful representation of the intended runtime.
+
+---
+
+## Legacy phases (superseded)
+
+The old Phase 0–8 numbering in earlier revisions of this file is no longer the active plan.
+For the current canonical status of documentation, security hardening, and repository
+reorganization work, see the status notes below and the README capability table.
+
+- Old Phase 0 (Documentation Foundation): effectively Done — docs 01–09 exist, but the roadmap
+  itself now needs this rewrite.
+- Old Phase 1 (Security Hardening): Done for the backend auth/authz items it covered; the frontend
+  auth UI still needs the Phase B wiring.
+- Old Phase 2 (Repository Reorganization): Done for the structural changes it covered; the frontend
+  API migration (Phase C) is the part that was noted as outstanding and is now promoted.
+
+---
+
+## Current position (validated baseline)
+
+As of this rewrite, the project is at the start of **Phase A**.
+
+What is already true:
+
+- The FastAPI backend boots, migrations apply, and the 12 hardening tests pass.
+- The Next.js app builds and has real feature pages.
+- The NestJS scaffold builds but is not the active business backend.
+- The docs 01–09 set exists and is detailed.
+
+What is not yet true and is now prioritized:
+
+- There is no shared universal layout, header, footer, or navigation system.
+- The frontend auth pages bypass the centralized API layer and store tokens insecurely.
+- The frontend still contains dozens of raw axios call sites instead of using the feature API
+  modules.
+- The disease and chat AI paths still degrade to fabricated/keyword behavior in the normal case.
+- Money and quantity columns are `Float` everywhere instead of the types doc 04 specifies.
+
+The next action is to start Phase A and build the shared presentation foundation before any
+further feature work.
+
 

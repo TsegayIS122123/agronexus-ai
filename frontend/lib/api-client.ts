@@ -26,6 +26,7 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
     method,
     headers: {
       "Accept": "application/json",
+      "Content-Type": body !== undefined ? "application/json" : "application/json",
       ...headers,
     },
     credentials,
@@ -33,18 +34,31 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
 
   if (body !== undefined) {
     init.body = JSON.stringify(body);
-    init.headers["Content-Type"] = "application/json";
   }
 
   const response = await fetch(buildUrl(path, query), init);
 
   if (!response.ok) {
+    let detail = ``;
+    try {
+      const errorBody = await response.json() as { detail?: string | string[] | object };
+      if (Array.isArray(errorBody.detail)) {
+        detail = errorBody.detail.map((item) => typeof item === 'string' ? item : JSON.stringify(item)).join('. ');
+      } else if (typeof errorBody.detail === 'string') {
+        detail = errorBody.detail;
+      } else if (errorBody.detail && typeof errorBody.detail === 'object') {
+        detail = JSON.stringify(errorBody.detail);
+      }
+    } catch {
+      detail = `Request failed with status ${response.status}`;
+    }
+
     const errorMessage =
       response.status === 401
-        ? "Unauthorized. Please log in again."
-        : `Request failed with status ${response.status}`;
+        ? `Unauthorized. Please log in again.${detail ? ` ${detail}` : ''}`
+        : `Request failed with status ${response.status}.${detail ? ` ${detail}` : ''}`;
 
-    throw new Error(errorMessage);
+    throw new ApiError(response.status, errorMessage, detail);
   }
 
   const text = await response.text();
@@ -68,3 +82,23 @@ export const patch = <T>(path: string, body?: unknown) =>
 
 export const del = <T>(path: string) =>
   request<T>(path, { method: "DELETE" });
+
+
+/**
+ * Wraps request errors into a structured ApiError so callers can inspect the HTTP status and the detail payload.
+ */
+export class ApiError extends Error {
+  constructor(
+    public readonly status: number,
+    message: string,
+    public readonly detail: string | undefined
+  ) {
+    super(message);
+    this.name = 'ApiError';
+    Object.setPrototypeOf(this, ApiError.prototype);
+  }
+
+  get statusCode() {
+    return this.status;
+  }
+}

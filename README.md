@@ -13,7 +13,7 @@ The project is being shaped as a portfolio-grade system with a clear separation 
 - **FastAPI/Python** for AI and ML services
 - **PostgreSQL, Redis, object storage, and asynchronous workers** for reliable infrastructure
 
-> **Honest status:** the repository currently contains the original FastAPI prototype and Next.js frontend. The NestJS platform backend, Chapa payment flow, and production hardening are documented as the target migration and are not falsely presented as complete.
+> **Honest status:** the repository currently contains a functional FastAPI prototype, a working Next.js frontend with real feature pages, and a built NestJS scaffold. It is a strong validated baseline, but it is not yet a consistent, production-ready application. The frontend has no shared layout system, the auth UI bypasses the centralized API layer, raw axios call sites are still scattered across feature pages, the AI paths still degrade to fabricated/keyword behavior in the normal case, and money/quantity columns are `Float` instead of the types the design document specifies. These gaps are now tracked explicitly in the roadmap below.
 
 ## Why AgroNexus AI?
 
@@ -44,14 +44,16 @@ That target slice is the implementation goal. The repository currently contains 
 
 | Capability | Status | Evidence / next boundary |
 |---|---|---|
-| Next.js role-based frontend | In Progress | Pages and API calls exist; no automated frontend tests or shared layout |
-| FastAPI agricultural routes | In Progress | 51 endpoints across 13 routers; pytest suite covers config and auth hardening, not every route |
+| Next.js role-based frontend | In Progress | Pages and API calls exist; no shared layout, no automated frontend tests, auth pages bypass the API layer, ~46 raw axios call sites remain |
+| FastAPI agricultural routes | Implemented (prototype) | 51 endpoints across 13 routers; pytest suite covers config and auth hardening, not every route |
 | YOLO disease detection | In Progress | Real inference path against `data/models/disease-detection/v1/`; fallback still fabricates results and is flagged `fallback_mode: true`; no measured evaluation yet |
 | RAG agricultural assistant | In Progress | Gemini call plus a hardcoded keyword knowledge base; no vector retrieval or populated document store |
 | Price and market features | In Progress | Prophet/database route exists; no LSTM execution or evaluation tests |
-| Marketplace listings and orders | In Progress | CRUD/status routes exist with ownership checks; payments not integrated |
-| Authentication and authorization | Implemented (prototype) | Admin role rejected at registration, order updates authorized on buyer/seller ID, HttpOnly cookie sessions, startup-validated secret. Covered by tests. |
+| Marketplace listings and orders | Implemented (prototype) | CRUD/status routes exist with ownership checks; payments not integrated; money columns are `Float` |
+| Authentication and authorization | Implemented (prototype, backend) | Admin role rejected at registration, order updates authorized on buyer/seller ID, HttpOnly cookie sessions, startup-validated secret. Covered by tests. Frontend auth UI still uses localStorage and raw axios. |
 | Configuration management | Implemented | `ai-service/app/core/config.py` is the single validated env surface; unknown values fail at startup |
+| Frontend layout foundations | Not started | No universal header/footer/nav, no Tailwind design tokens, no standardized accessible button system |
+| Frontend API migration | Not started | Feature `api.ts` modules exist but are not imported; pages call `axios` directly |
 | Chapa payments | Planned | No provider adapter, sandbox checkout, webhook, or payment endpoint |
 | Email/SMS notifications | Planned | No email/SMS provider integration or notification worker |
 | Email verification / password reset / SMS OTP | Planned | Next phase; token tables specified but not created |
@@ -151,7 +153,7 @@ agronexus-ai/
 └── README.md
 ```
 
-The target migration layout is documented in [03 - Software Design Specification](docs/03-software-design-specification.md). It will be introduced incrementally after API contracts and tests are in place. `docs/TEMP-MASTER-ROADMAP.md` tracks current phase status.
+The target migration layout is documented in [03 - Software Design Specification](docs/03-software-design-specification.md). It will be introduced incrementally after API contracts and tests are in place. `docs/TEMP-MASTER-ROADMAP.md` tracks the current validated baseline and the re-ordered implementation phases.
 
 ## Local development: current prototype
 
@@ -271,19 +273,20 @@ The production design requires:
 
 These are engineering requirements, not guarantees provided automatically by FastAPI or NestJS.
 
-## Development roadmap
+## Development roadmapCurrent position and per-phase status are tracked in
 
-Current position and per-phase status are tracked in
 [docs/TEMP-MASTER-ROADMAP.md](docs/TEMP-MASTER-ROADMAP.md). In order:
 
 1. ~~Harden the current authentication and authorization behavior.~~ Done.
 2. ~~Add migrations, tests, shared API contracts, and security checks.~~ Migrations and tests done; contracts pending.
-3. **Add identity flows** — email verification, password reset, SMS OTP, notification adapters.
-4. **Add Chapa sandbox payments** — server-side verification, idempotent webhooks, server-computed order totals.
-5. **Implement the NestJS platform backend** for identity and marketplace workflows, only once the above are solid on FastAPI.
-6. **Keep and formalize FastAPI** as the internal AI service behind a signed service token.
-7. **Add a tested staging slice** with observability and rollback.
-8. **Add mobile and offline capabilities** after the public API contract is stable.
+3. ~~Identity flows and Chapa payments on the current backend~~ — not yet started; not gated by frontend work, but not started.
+4. **Phase A — Global layout foundations** — universal accessible header, footer, navigation, Tailwind design tokens, accessible button system. First priority for the frontend.
+5. **Phase B — Hardened secure authentication & onboarding UI** — wire the existing secure FastAPI auth backend through the centralized API layer; remove localStorage token handling.
+6. **Phase C — API migration** — move raw axios call sites onto the feature API modules and `lib/api-client`.
+7. **Phase D — Backend-to-frontend service coupling** — one approved way to talk to the backend, shared loading/empty/error patterns, auth guard parity.
+8. **Phase E — Advanced AI services** — production YOLO with evaluation, real RAG retrieval, forecast provenance.
+9. **Phase F — Production infrastructure** — `Float`→`NUMERIC`/minor-unit migrations, schema alignment with doc 04, indexes, containerization, observability.
+10. **NestJS platform backend** — start only after the current FastAPI backend and the frontend integration layers are solid, per doc 09.
 
 
 ## Contributing
