@@ -1,6 +1,6 @@
-import type { Config } from 'tailwindcss';
+// CommonJS version of theme tokens for tailwind.config.js compatibility
 
-export const ROLE_COLORS = {
+const ROLE_COLORS = {
   farmer: {
     50: '#f0fdf4',
     100: '#dcfce7',
@@ -40,16 +40,9 @@ export const ROLE_COLORS = {
     900: '#581c87',
     950: '#3b0764',
   },
-} as const;
+};
 
-export type RoleColorToken = keyof typeof ROLE_COLORS.farmer;
-export type RoleKey = keyof typeof ROLE_COLORS;
-
-export function roleColor(role: RoleKey, shade: RoleColorToken): string {
-  return ROLE_COLORS[role][shade];
-}
-
-export const TAILWIND_EXTENSION: Partial<Config['theme']> = {
+const TAILWIND_EXTENSION = {
   colors: {
     role: {
       farmer: ROLE_COLORS.farmer,
@@ -102,6 +95,11 @@ export const TAILWIND_EXTENSION: Partial<Config['theme']> = {
       'Roboto',
       'Helvetica',
       'Arial',
+      'sans-serif',
+    ],
+    ethiopic: [
+      'Noto Sans Ethiopic',
+      'Abyssinica SIL',
       'sans-serif',
     ],
   },
@@ -174,29 +172,9 @@ export const TAILWIND_EXTENSION: Partial<Config['theme']> = {
     inner: 'inset 0 2px 4px 0 rgb(0 0 0 / 0.05)',
     none: '0 0 #00000000',
   },
-  transitionDuration: {
-    DEFAULT: '150ms',
-    slow: '300ms',
-    fast: '100ms',
-  },
-  transitionTimingFunction: {
-    DEFAULT: 'cubic-bezier(0.4, 0, 0.2, 1)',
-    easeInOut: 'cubic-bezier(0.4, 0, 0.2, 1)',
-    easeOut: 'cubic-bezier(0, 0, 0.2, 1)',
-    easeIn: 'cubic-bezier(0.4, 0, 1, 1)',
-  },
-  zIndex: {
-    auto: 'auto',
-    0: '0',
-    10: '10',
-    20: '20',
-    30: '30',
-    40: '40',
-    50: '50',
-    60: '60',
-    70: '70',
-    80: '80',
-    90: '90',
-    100: '100',
-  },
+};
+
+module.exports = {
+  ROLE_COLORS,
+  TAILWIND_EXTENSION,
 };

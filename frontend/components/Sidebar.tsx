@@ -1,7 +1,7 @@
-import { roleColors, RoleColor } from "@/lib/theme";
+import { ROLE_COLORS, type RoleKey } from "@/lib/theme";
 
 interface SidebarProps {
-  role?: RoleColor;
+  role?: RoleKey;
   currentPath?: string;
 }
 
@@ -30,7 +30,9 @@ const marketplaceLinks = [
 ];
 
 export function Sidebar({ role = "farmer", currentPath = "" }: SidebarProps) {
-  const colors = roleColors[role];
+  const colors = ROLE_COLORS[role];
+  const darkColor = colors[900];
+  const lightBg = colors[50];
 
   const links =
     role === "farmer"
@@ -42,7 +44,7 @@ export function Sidebar({ role = "farmer", currentPath = "" }: SidebarProps) {
       : marketplaceLinks;
 
   return (
-    <aside className={`${colors.dark} text-white w-56 min-h-screen`}>
+    <aside className={`${darkColor} text-white w-56 min-h-screen`}>
       <nav className="mt-6">
         <ul className="space-y-2 px-3">
           {links.map((link) => {
