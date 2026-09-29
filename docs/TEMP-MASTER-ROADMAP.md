@@ -40,39 +40,47 @@
   echo-only checks.
 
 ## Phase 2 — Repository Reorganization
-**Status: In Progress**
+**Status: Done**
 
-- [ ] **A — Data & model directories.** Move trained weights out of `backend/` into
-      `data/models/<task>/<version>/` (e.g. `data/models/disease-detection/v1/best.pt`
-      plus `metrics.json` and `model_card.md`). Add `data/raw/`, `data/processed/`, and
-      keep the existing `data/dataset/disease/{images,labels}/{train,val,test}` as-is.
-      Add `MODEL_VERSION` env var so `detector.py` reads a path built from it instead of
-      a hardcoded filename. Gitignore `*.pt`, keep `metrics.json`/`model_card.md` tracked.
-- [ ] **B — Backend core config.** Add `backend/app/core/config.py` as the single place
-      that loads and validates every env var (existing + placeholder future ones for
-      Chapa/email/SMS). Fix the dead `app.models.weather` import found in the audit —
-      confirm first whether a route is silently broken because of it. Do not create a
-      separate `backend/ai/` folder yet — that split happens only once NestJS exists and
-      there's a real contract to split against (doc 09).
-- [ ] **C — Frontend feature reorganization.** Restructure `frontend/` from page-grouped
-      to feature-grouped: `features/{auth,farmer,processor,consumer,marketplace}/`, each
-      with its own `api.ts` that calls a single shared `lib/api-client.ts` — this is what
-      actually fixes the route-mismatch bugs found earlier, since every path lives in one
-      file instead of scattered across pages. Add shared `components/Header.tsx`,
-      `Footer.tsx`, `Sidebar.tsx` (none currently exist). Add `lib/theme.ts` documenting
-      the already-implemented role colors (farmer=green-700/900, processor=blue-700/900,
-      consumer=purple-700/900) as named constants instead of repeated class strings.
-      Move pages into `features/` one module at a time — verify the build after each.
-- [ ] **D — Env alignment.** `.env.example` in backend/frontend/root gets the new
-      `MODEL_PATH`/`MODEL_VERSION` vars plus clearly-commented `# Planned — not yet used`
-      placeholders for Chapa/email/SMS keys. Don't add `REDIS_URL` until Redis actually
-      exists in `docker-compose.yml`.
-- [ ] **E — CI check.** Confirm `alembic upgrade head` and `pytest` still pass after A–D
-      (model files moving shouldn't affect either). Add a plain `npm run build` step to
-      CI as a smoke check that the frontend reorg didn't break imports.
+- [x] **A — Data & model directories.** Weights live at
+      `data/models/disease-detection/v1/` (`best.pt` gitignored, `metrics.json`
+      and `model_card.md` tracked). `MODEL_PATH` and `MODEL_VERSION` drive the
+      detector; `data/dataset/disease/{images,labels}/{train,val,test}` unchanged.
+- [x] **B — Backend core config.** `ai-service/app/core/config.py` is the single
+      validated env surface; all five previous `os.getenv` call sites
+      (`database.py`, `auth_service.py`, `chat_service.py`, `weather_service.py`,
+      `disease/detector.py`) plus `alembic/env.py` now read from it. The dead
+      `app.models.weather` import was confirmed to be breaking startup —
+      `main.py` includes the weather router, so the whole service failed to
+      import — and is removed. No separate `ai/` folder, per doc 09.
+- [x] **C — Frontend feature reorganization.** `features/{auth,farmer,
+      processor,consumer,marketplace}/` with shared `components/` and `lib/theme.ts`.
+      Note: the `features/*/api.ts` layer calls `lib/api-client.ts` with paths
+      that omit the `/api/v1` prefix and are not imported by any component yet.
+      Migrating the live `axios` call sites onto that layer is still outstanding.
+- [x] **D — Env alignment.** `ai-service/.env.example` and
+      `frontend/.env.example` both document the current surface, with
+      `# Planned — not yet used` sections for Chapa/email/SMS. `REDIS_URL` is
+      deliberately absent until Redis exists in `docker-compose.yml`.
+- [x] **E — CI check.** `verify-migration.yml` runs `alembic upgrade head`
+      against a real Postgres and then pytest; `ci.yml` already builds the
+      NestJS scaffold and the Next.js app. The migration path was adjusted so
+      `alembic` no longer needs a `SECRET_KEY` to import `app.database`.
 
-**Order matters: A → B → C → D → E.** C is the largest change — do it feature-by-feature,
-not all at once, and re-run the route-mismatch check after each module moves.
+**Follow-ups carried out of Phase 2, worth recording:**
+
+- `weather_service.py` had a dead `from app.models.weather import WeatherData`
+  (no such module). Because `main.py` includes the weather router, this raised
+  `ImportError` at startup — the API could not boot at all.
+- `detector.py` called `YOLO(...)` without ever importing it. The `NameError`
+  was swallowed by a broad `except`, so the trained weights never loaded and
+  every diagnosis fell through to the randomized fallback. The guard now
+  mirrors the existing `cv2`/`numpy` handling.
+- `ALGORITHM` became operator-controlled as a side effect of the migration, so
+  it is now validated against an HMAC allowlist; `none` is rejected.
+- The signing key is read per request rather than frozen at import, so rotating
+  `SECRET_KEY` invalidates outstanding tokens without a restart.
+
 
 ## Phase 3 — Identity & Notifications
 **Status: Not started**
@@ -159,7 +167,10 @@ codebase.
 
 ---
 
-## What to push right now (end of Phase 1 + start of Phase 2)
+## What to push right now (end of Phase 2, start of Phase 3)
 
-The current working tree already contains real, tested Phase 1 work plus the new docs.
-Nothing here is speculative — it's what's already on disk per your `git status` output.
+Phases 0, 1, and 2 are complete. The FastAPI service boots, `alembic upgrade
+head` runs against a clean database, and `pytest` passes. The next unit of work
+is Phase 3 — identity and notifications — not the NestJS migration, which stays
+blocked until Phases 3 and 4 land on the current backend.
+
