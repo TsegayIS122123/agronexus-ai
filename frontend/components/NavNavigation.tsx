@@ -164,7 +164,6 @@ export function NavNavigation({ role }: NavNavigationProps) {
           onChange={(e) => {
             const next = eventTargetValueAsLocale(e.target.value);
             if (next) {
-              const { setLocale } = useLocaleValue();
               setLocale(next);
             }
           }}

@@ -255,7 +255,7 @@ export default function Home() {
                 <span className="text-xl font-bold text-green-400">AgroNexus AI</span>
               </div>
               <p className="text-gray-400 text-sm">
-                AI Operating System for Ethiopia's Agricultural Value Chain.
+                AI Operating System for Ethiopia&apos;s Agricultural Value Chain.
                 From Soil to Shelf — Powered by AI.
               </p>
             </div>

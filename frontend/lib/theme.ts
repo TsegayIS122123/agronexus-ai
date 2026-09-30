@@ -104,6 +104,10 @@ export const TAILWIND_EXTENSION: Partial<Config['theme']> = {
       'Arial',
       'sans-serif',
     ],
+    // Ethiopic script stack for Amharic, Tigrinya, and Ge'ez content. Kept as a
+    // separate token rather than appended to `sans` so Latin UI chrome does not
+    // pay for a font it will never render.
+    ethiopic: ['NotoSansEthiopic', 'AbyssinicaSIL', 'sans-serif'],
   },
   fontSize: {
     xs: ['0.75rem', { lineHeight: '1rem' }],

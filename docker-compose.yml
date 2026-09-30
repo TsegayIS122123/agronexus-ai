@@ -49,6 +49,19 @@ services:
       postgres:
         condition: service_healthy
 
+  frontend:
+    build: ./frontend
+    container_name: agronexus-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      # The /api/v1 rewrite runs inside this container, so it must address
+      # ai-service by its compose service name. "localhost" here would resolve
+      # to the frontend container itself and every API call would 404.
+      AI_SERVICE_URL: http://ai-service:8000
+    depends_on:
+      - ai-service
+
 volumes:
   postgres_data:
   pgadmin_data:

@@ -33,8 +33,8 @@ jobs:
       
       - name: Install dependencies
         run: |
-          pip install -r ai-service/requirements.txt
-          pip install pytest alembic python-dotenv
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
       
       - name: Run migrations
         env:

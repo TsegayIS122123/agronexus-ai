@@ -1,0 +1,6 @@
+# Test-only dependencies. Kept separate from ai-service/requirements.txt so the
+# runtime image does not carry pytest. Both CI workflows install this file.
+-r ai-service/requirements.txt
+
+pytest>=8.0
+PyYAML>=6.0

@@ -39,7 +39,9 @@ export default function RootLayout({
           <LocaleProvider>
             <SkipLink />
             <Header />
-            <main>{children}</main>
+            <main id="main-content" tabIndex={-1}>
+              {children}
+            </main>
             <Footer />
           </LocaleProvider>
         </AuthProvider>

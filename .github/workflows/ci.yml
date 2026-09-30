@@ -20,7 +20,7 @@ jobs:
       - name: Install test tooling
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -r ai-service/requirements.txt pytest python-jose[cryptography] email-validator bcrypt psycopg2-binary mako
+          python -m pip install -r requirements-dev.txt
 
       - name: Run hardening tests
         env:
