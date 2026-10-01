@@ -203,6 +203,7 @@ describe('AuthService', () => {
         email: 'User@Example.com',
         phone: '+251911000000',
         password: 'correct-horse',
+        role: UserRole.FARMER,
       });
 
       expect(users.create).toHaveBeenCalledWith(
@@ -221,6 +222,7 @@ describe('AuthService', () => {
           email: 'dupe@example.com',
           phone: '+251911000000',
           password: 'correct-horse',
+          role: UserRole.FARMER,
         }),
       ).rejects.toBeInstanceOf(ForbiddenException);
     });
@@ -233,6 +235,7 @@ describe('AuthService', () => {
           email: 'a@example.com',
           phone: '+251911111111',
           password: 'correct-horse',
+          role: UserRole.FARMER,
         }),
       ).rejects.toBeInstanceOf(ForbiddenException);
     });

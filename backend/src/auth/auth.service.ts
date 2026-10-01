@@ -71,6 +71,7 @@ export class AuthService {
       password: dto.password,
       language: dto.language,
       region: dto.region,
+      role: dto.role,
     });
 
     // The account stays unverified; the token below is issued but every

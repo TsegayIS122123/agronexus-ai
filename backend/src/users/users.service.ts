@@ -29,6 +29,7 @@ export interface RegisterInput {
   email: string;
   phone: string;
   password: string;
+  role: string;
   language?: string;
   region?: string;
 }
@@ -128,6 +129,7 @@ export class UsersService {
       passwordHash: await hashPassword(input.password),
       language: input.language ?? 'am',
       region: input.region ?? null,
+      role: input.role,
       isVerified: false,
     });
     return this.users.save(user);
