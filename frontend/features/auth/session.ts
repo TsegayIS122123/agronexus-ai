@@ -20,7 +20,22 @@
 import { authApi, type PublicUser, type TokenPair } from "./api";
 
 const REFRESH_COOKIE = "agronexus_refresh";
-const ACCESS_TTL_MS = 14 * 60 * 1000;
+
+/**
+ * How long the browser keeps the refresh cookie before it stops offering it.
+ *
+ * This is deliberately not the access token's lifetime. The cookie carries a
+ * refresh token, and tying the cookie to the 14-minute access token signed people
+ * out every 14 minutes even though their refresh token was still valid for days.
+ *
+ * It is also not a claim to know how long the token lives: that is the service's
+ * decision, and the service is the only thing that gets to enforce it. This value
+ * is just an upper bound on how long the browser bothers to ask. If it outlives
+ * the token, `ensureSession` gets a rejection from the service, clears the cookie
+ * and carries on signed out. Being wrong here costs one wasted request, never
+ * access, so the guess is safe in the direction that matters.
+ */
+const REFRESH_COOKIE_MAX_AGE_SECONDS = 30 * 24 * 60 * 60;
 
 let accessToken: string | null = null;
 let accessTokenExpiresAt = 0;
@@ -46,7 +61,7 @@ function readRefreshCookie(): string | null {
 function writeRefreshCookie(token: string) {
   if (typeof document === "undefined") return;
   const secure = window.location.protocol === "https:" ? "; Secure" : "";
-  document.cookie = `${REFRESH_COOKIE}=${encodeURIComponent(token)}; path=/; Max-Age=${ACCESS_TTL_MS / 1000}; SameSite=Lax${secure}`;
+  document.cookie = `${REFRESH_COOKIE}=${encodeURIComponent(token)}; path=/; Max-Age=${REFRESH_COOKIE_MAX_AGE_SECONDS}; SameSite=Lax${secure}`;
 }
 
 function clearRefreshCookie() {
@@ -109,9 +124,11 @@ export function ensureSession(): Promise<PublicUser | null> {
 
   inflight = (async () => {
     try {
-      const { tokens } = await authApi.refresh(refreshToken);
+      // The service returns {user, tokens} here, the same shape as login. The user
+      // comes back with the tokens, so there is no reason to spend a second request
+      // asking /me who they are.
+      const { user, tokens } = await authApi.refresh(refreshToken);
       storeTokens(tokens);
-      const user = await authApi.me(tokens.accessToken);
       currentUser = user;
       notify(true);
       return user;

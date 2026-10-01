@@ -124,7 +124,8 @@ export const get = <T>(
   path: string,
   query?: Record<string, string | number | boolean | undefined>,
   baseUrl?: string,
-) => request<T>(path, { method: "GET", query, baseUrl });
+  headers?: Record<string, string>,
+) => request<T>(path, { method: "GET", query, baseUrl, headers });
 
 export const post = <T>(path: string, body?: unknown, headers?: Record<string, string>, baseUrl?: string) =>
   request<T>(path, { method: "POST", body, headers, baseUrl });

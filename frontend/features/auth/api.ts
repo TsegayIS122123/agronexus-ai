@@ -19,6 +19,16 @@ export { ApiError };
 export const AUTH_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000";
 
+/**
+ * The identity service reads the access token from the `Authorization` header on
+ * its protected routes, so a call without this is anonymous no matter what token
+ * the caller happens to be holding. Omitted entirely when there is no token, which
+ * lets the service answer 401 rather than being handed `Bearer null`.
+ */
+function bearerHeaders(accessToken?: string | null): Record<string, string> {
+  return accessToken ? { Authorization: `Bearer ${accessToken}` } : {};
+}
+
 export const API = {
   register: "/api/v1/auth/register",
   login: "/api/v1/auth/login",
@@ -132,7 +142,7 @@ export const authApi = {
     }),
 
   me: (accessToken?: string) =>
-    get<PublicUser>(API.me, undefined, AUTH_BASE_URL).catch(translate),
+    get<PublicUser>(API.me, undefined, AUTH_BASE_URL, bearerHeaders(accessToken)).catch(translate),
 
   /** 200 {verified}. 403 if the token was already consumed. */
   verifyEmail: (token: string) =>
@@ -156,9 +166,12 @@ export const authApi = {
   otpVerify: (email: string, code: string, purpose: OtpPurpose = "login") =>
     post<AuthResult>(API.otpVerify, { email, code, purpose }, undefined, AUTH_BASE_URL).catch(translate),
 
-  /** 200 with a new pair. The presented token is retired as part of the rotation. */
+  /**
+   * 200 {user, tokens} with a new pair, same shape as login. The presented token
+   * is retired as part of the rotation, so the replacement has to be stored.
+   */
   refresh: (refreshToken: string) =>
-    post<{ tokens: TokenPair }>(API.refresh, { refreshToken }, undefined, AUTH_BASE_URL).catch(translate),
+    post<AuthResult>(API.refresh, { refreshToken }, undefined, AUTH_BASE_URL).catch(translate),
 
   /** 200 {loggedOut}. The refresh token stops working immediately. */
   logout: (refreshToken: string) =>
