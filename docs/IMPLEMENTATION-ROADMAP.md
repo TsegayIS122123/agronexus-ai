@@ -41,7 +41,7 @@ pointed at it before AI features grow any further.
 |---|---|---|---|
 | 1 | Foundation Repair | Frontend | **Done** |
 | 2 | Backend Identity Core | Backend + DB | **Done** |
-| 3 | Frontend Auth UI | Frontend | **Next** |
+| 3 | Frontend Auth UI | Frontend | **Done**, browser pass outstanding |
 | 4 | Auth Integration | Full stack | Planned |
 | 5 | API Migration | Backend | Planned |
 | 6 | Service Coupling Cleanup | Full stack | Planned |
@@ -220,23 +220,98 @@ rejection, and rate limiting on register and login.
 
 ---
 
-## Phase 3 — Frontend Auth UI (Frontend)
+## Phase 3 — Frontend Auth UI (Frontend) — DONE
 
-**Goal:** auth screens and client state, built against mocks — no backend calls yet.
+**Goal:** auth screens talking to the live identity service from Phase 2.
 
-- [ ] Signup, verify-email (incl. resend + countdown), forgot-password, reset-password,
-      OTP entry, and login screens.
-- [ ] Password strength meter, inline field errors, accessible error summaries, and
-      loading/disabled states that block double-submit.
-- [ ] Locale-aware copy (`en`, `am`, `om`, `ti`) — Ethiopic stack from Phase 1 now applies.
-- [ ] Keyboard and screen-reader pass: labelled inputs, focus moved to first error,
-      no focus traps on non-modal screens.
+The scope originally said "built against mocks, no backend calls yet", with the
+wiring deferred to Phase 4. That was reversed before any code was written. Building
+a fake transport in order to delete it one phase later is wasted work, and it tends
+to leave screens that look finished while never having met a real response. The
+screens below were written against the running NestJS service from the first commit.
 
-**Verify:**
+- [x] Signup, verify-email (resend + countdown), forgot-password, reset-password,
+      OTP entry, and login, each behind a thin `app/auth/*` route wrapper.
+- [x] One HTTP client, `features/auth/api.ts`, mapping to the routes in
+      `backend/src/auth/auth.controller.ts`. No screen contains a `fetch`.
+- [x] Password strength meter, inline field errors wired with `aria-describedby`,
+      an alert summary that receives focus on failure, and submit states that block
+      a second request.
+- [x] Copy in `en`, `am`, `om`, `ti` (64 keys, in `lib/i18n/auth.ts`).
+- [x] Keyboard and screen-reader pass, with the accessibility rules implemented once
+      in `features/auth/components/AuthForm.tsx` rather than repeated per screen.
+
+### Decisions worth recording
+
+**`api-client.ts` had to learn a second error shape.** It understood only FastAPI's
+`{detail}`, so every NestJS error would have rendered as "Request failed with status
+400" and the screens would have looked broken against a working backend. It now
+handles both, and handles `message` being an array, which is what `ValidationPipe`
+returns for a rejected payload.
+
+**A rejected sign-in says one thing, on purpose.** The service answers 403 for an
+unverified address and 401 for a wrong password or an unknown account. The 403 path
+offers to resend the verification email; the 401 path shows a single message that
+does not distinguish the two failure cases, so the form cannot be used to discover
+which addresses have accounts.
+
+**The resend countdown is not announced every second.** A live region that re-spoke
+the remaining seconds would make the page unusable with a screen reader, so the
+ticking digits are `aria-hidden` and a single sentence is announced when the wait
+starts and again when it ends.
+
+**Tokens are not in `localStorage`.** The access token lives in a module variable and
+is not written to storage; the refresh token is in a `SameSite=Lax` cookie. A page
+load therefore spends one refresh round-trip to restore a session. This is not the
+final answer: the refresh token is still readable by JavaScript, and the complete
+fix is an httpOnly cookie set by the service, which needs the refresh endpoint to
+accept a cookie. Recorded rather than implied.
+
+**A test caught a blank screen.** The signup screen used to render `null` on
+success while the router navigated, which flashed an empty page. The submit button
+now stays busy until the screen is replaced.
+
+### Verified
+
 ```
-cd frontend && npm run lint && npm run typecheck && npm run build
+cd frontend && npm run typecheck     # clean
+cd frontend && npm run lint          # No ESLint warnings or errors
+cd frontend && npm run verify:tokens # PASS: all 9 token groups resolve
+cd frontend && npm test              # 20 passed, 20 total
 ```
-Manual: tab through every screen; submit empty, invalid, and valid payloads.
+
+The 20 component tests assert behaviour rather than rendering: that both sign-in
+fields are labelled, that an empty submit produces an alert which receives focus
+and does not call the service, that a phone number the service would reject is
+rejected without a round trip, that a mismatched confirmation blocks submission,
+that a duplicate address is attached to the email field rather than a generic
+banner, that the sign-up request carries no `role` field, and that an unverified
+account is routed to verification rather than to a dashboard.
+
+`tests/i18n-parity.test.ts` exists because `t()` falls back to English for a missing
+key. That fallback is correct at runtime and it makes a half-finished translation
+table look complete on screen, so parity across the four locales, blank values, and
+matching `{placeholder}` sets are asserted instead of trusted.
+
+Not yet verified by a person in a browser: see Outstanding.
+
+### Outstanding
+
+- No build has been run for these screens yet, and no screen has been exercised in a
+  browser against the running service. The component tests cover the screens' logic
+  and accessibility wiring, not their appearance or their behaviour inside Next's
+  router.
+- `components/AuthProvider.tsx` still polls the old ai-service and is unaffected by
+  this phase apart from one compile fix: `GET /me` returns the user object directly,
+  not `{user}`, and the old wrapper read was wrong.
+- Copy needs review by a native Amharic, Oromo and Tigrinya speaker before real
+  users rely on it. This is not a formality: the pre-existing Amharic navigation
+  strings are already wrong in ways no automated check catches. `home` contains a
+  replacement character, and `about` and `contact` both read "thank you". The
+  parity test proves a key exists, not that the words are right.
+- `components/Button.tsx` still hardcodes `green-600` and friends instead of the
+  `brand` and `status` tokens Phase 1 introduced, so the auth screens inherit that
+  inconsistency.
 
 ---
 
