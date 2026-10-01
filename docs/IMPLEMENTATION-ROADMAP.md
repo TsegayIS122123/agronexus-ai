@@ -313,6 +313,36 @@ Not yet verified by a person in a browser: see Outstanding.
   `brand` and `status` tokens Phase 1 introduced, so the auth screens inherit that
   inconsistency.
 
+### Getting a code out of thin air, locally
+
+Nobody can read a verification or OTP code back out of the database. A
+verification token is stored as SHA-256 and an OTP as bcrypt, so `select` returns
+nothing useful and no query will ever surface a code that was already sent. That is
+the correct behaviour and it is worth keeping; it just means there is no way to
+exercise a verification screen until something delivers the code.
+
+`tools/dev-print-code.mjs` is the local answer, and it works backwards from the
+problem. It picks a code, then plants the hash the service would have written:
+
+```
+node tools/dev-print-code.mjs tsegayassefa27@gmail.com
+node tools/dev-print-code.mjs tsegayassefa27@gmail.com --otp
+node tools/dev-print-code.mjs tsegayassefa27@gmail.com --otp --purpose verify_email
+```
+
+This is not a way around the check. The code still goes through the same hashing,
+the same expiry, the same single-use rule and the same attempt ceiling, because it
+is verified by the same code path a delivered one would be. The only step being
+skipped is delivery, which is the step with no local implementation.
+
+It refuses to write to anything but a local database, and refuses outright under
+`NODE_ENV=production`, because a tool that mints valid credentials by hand should
+be structurally incapable of running near real data.
+
+Replaced later by a real provider. When a delivery adapter exists, this tool should
+be deleted rather than kept, so that nobody keeps reaching for a shortcut that is no
+longer needed.
+
 ---
 
 ## Phase 4 — Auth Integration (Full stack)
