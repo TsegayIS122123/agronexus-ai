@@ -10,6 +10,7 @@ import { OtpCode } from './otp-code.entity';
 import { RefreshToken } from './refresh-token.entity';
 import { VerificationPurpose } from './verification-purpose.enum';
 import { OtpChannel, OtpPurpose } from './otp.enum';
+import { UserRole } from './user-role.enum';
 import {
   generateNumericOtp,
   hashToken,
@@ -29,7 +30,7 @@ export interface RegisterInput {
   email: string;
   phone: string;
   password: string;
-  role: string;
+  role: UserRole;
   language?: string;
   region?: string;
 }
