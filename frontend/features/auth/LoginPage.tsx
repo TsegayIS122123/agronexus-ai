@@ -1,118 +1,166 @@
 "use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import axios from 'axios';
+import { useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
-export default function Login() {
+import { useLocaleValue } from "@/components/LocaleProvider";
+import { authApi, EmailNotVerifiedError, RateLimitedError } from "./api";
+import { establish } from "./session";
+import {
+  AuthShell,
+  Button,
+  ErrorSummary,
+  Field,
+  PasswordField,
+  SuccessNotice,
+  useAuthForm,
+} from "./components/AuthForm";
+
+export default function LoginPage() {
+  const { t } = useLocaleValue();
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [formData, setFormData] = useState({
-    email: '',
-    password: ''
-  });
+  const form = useAuthForm({ email: "", password: "" });
+  const [unverified, setUnverified] = useState<string | null>(null);
+  const [resent, setResent] = useState(false);
+  const [resending, setResending] = useState(false);
 
-  const formatError = (error: any) => {
-    const detail = error?.response?.data?.detail;
-    if (Array.isArray(detail)) {
-      return detail.map((item: any) => item.msg || JSON.stringify(item)).join(', ');
+  async function onSubmit(event: React.FormEvent) {
+    event.preventDefault();
+    form.setServerError(undefined);
+    setUnverified(null);
+    setResent(false);
+
+    const errors: Record<string, string> = {};
+    if (!form.values.email.trim()) errors.email = t("authFieldRequired");
+    if (!form.values.password) errors.password = t("authFieldRequired");
+    if (Object.keys(errors).length > 0) {
+      form.report(errors);
+      return;
     }
-    if (typeof detail === 'object' && detail !== null) {
-      return detail.message || detail.detail || JSON.stringify(detail);
-    }
-    return detail || 'Invalid email or password';
-  };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-
+    form.setSubmitting(true);
     try {
-      const response = await axios.post('/api/v1/auth/login', formData);
-      
-      localStorage.setItem('token', response.data.access_token);
-      localStorage.setItem('user', JSON.stringify(response.data.user));
-      document.cookie = `access_token=${encodeURIComponent(response.data.access_token)}; path=/; SameSite=Lax`;
-      document.cookie = `user_role=${encodeURIComponent(response.data.user.role || 'farmer')}; path=/; SameSite=Lax`;
-      
-      const role = response.data.user.role || 'farmer';
+      const result = await authApi.login({
+        email: form.values.email.trim(),
+        password: form.values.password,
+      });
+      await establish(result);
+      const role = result.user.role ?? "farmer";
       router.push(`/${role}/dashboard`);
-    } catch (err: any) {
-      setError(formatError(err));
+    } catch (error) {
+      if (error instanceof EmailNotVerifiedError) {
+        setUnverified(form.values.email.trim());
+      } else if (error instanceof RateLimitedError) {
+        form.setServerError(t("authRateLimited"));
+      } else {
+        // The service returns one message for a wrong password and for an
+        // unknown account. Showing anything more specific here would turn the
+        // form into a way to discover which addresses have accounts.
+        form.setServerError(t("authInvalidCredentials"));
+      }
     } finally {
-      setLoading(false);
+      form.setSubmitting(false);
     }
-  };
+  }
+
+  async function onResend() {
+    if (!unverified) return;
+    setResending(true);
+    try {
+      await authApi.resendVerification(unverified);
+      setResent(true);
+    } catch {
+      form.setServerError(t("authNetworkError"));
+    } finally {
+      setResending(false);
+    }
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
-        <div className="text-center">
-          <div className="text-4xl mb-2">🌾</div>
-          <h2 className="text-3xl font-bold text-gray-900">Welcome Back</h2>
-          <p className="mt-2 text-gray-600">Sign in to your AgroNexus AI account</p>
-        </div>
+    <AuthShell
+      title={t("authSignInTitle")}
+      subtitle={t("authSignInSubtitle")}
+      footer={
+        <>
+          {t("noAccount")}{" "}
+          <Link href="/auth/register" className="font-medium text-brand-700 hover:underline">
+            {t("createOneNow")}
+          </Link>
+        </>
+      }
+    >
+      <form onSubmit={onSubmit} noValidate className="space-y-4">
+        <ErrorSummary
+          id={form.summaryId}
+          heading={t("authErrorsHeading")}
+          serverError={form.serverError}
+          errors={form.errors}
+        />
 
-        {error && (
-          <div className="mt-4 bg-red-50 text-red-600 p-3 rounded-lg text-sm">
-            {error}
+        {unverified && !resent && (
+          <div role="status" className="rounded-lg border border-status-warning bg-amber-50 p-3 text-sm">
+            <p className="font-semibold text-text-primary">{t("authUnverifiedTitle")}</p>
+            <p className="mt-1 text-text-secondary">{t("authUnverifiedBody")}</p>
+            <div className="mt-2 flex flex-wrap gap-3">
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                loading={resending}
+                onClick={onResend}
+              >
+                {t("authResendVerification")}
+              </Button>
+              <Link
+                href="/auth/verify-email"
+                className="self-center text-sm font-medium text-brand-700 hover:underline"
+              >
+                {t("authEnterTokenManually")}
+              </Link>
+            </div>
           </div>
         )}
 
-        <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Email</label>
-            <input
-              type="email"
-              required
-              className="mt-1 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-              placeholder="you@example.com"
-              value={formData.email}
-              onChange={(e) => setFormData({...formData, email: e.target.value})}
-            />
-          </div>
+        {resent && <SuccessNotice id="resent-notice">{t("authResendSent")}</SuccessNotice>}
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Password</label>
-            <div className="relative">
-              <input
-                type={showPassword ? "text" : "password"}
-                required
-                className="mt-1 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 pr-10"
-                placeholder="Enter your password"
-                value={formData.password}
-                onChange={(e) => setFormData({...formData, password: e.target.value})}
-              />
-              <button
-                type="button"
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
-                onClick={() => setShowPassword(!showPassword)}
-              >
-                {showPassword ? '👁️' : '👁️‍🗨️'}
-              </button>
-            </div>
-          </div>
+        <Field
+          label={t("authEmail")}
+          type="email"
+          inputMode="email"
+          autoComplete="email"
+          placeholder="you@example.com"
+          value={form.values.email}
+          onChange={(value) => form.set("email", value)}
+          error={form.errors.email}
+          disabled={form.submitting}
+          testId="login-email"
+        />
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition disabled:opacity-50"
+        <PasswordField
+          label={t("authPassword")}
+          value={form.values.password}
+          onChange={(value) => form.set("password", value)}
+          error={form.errors.password}
+          disabled={form.submitting}
+          showLabelShow={t("authShowPassword")}
+          showLabelHide={t("authHidePassword")}
+          testId="login-password"
+        />
+
+        <div className="flex justify-end">
+          <Link
+            href="/auth/forgot-password"
+            className="text-sm font-medium text-brand-700 hover:underline"
           >
-            {loading ? 'Signing in...' : 'Sign In'}
-          </button>
+            {t("authForgotLink")}
+          </Link>
+        </div>
 
-          <p className="text-center text-sm text-gray-600">
-            Don't have an account?{' '}
-            <Link href="/auth/register" className="text-green-600 hover:text-green-700 font-medium">
-              Create one now
-            </Link>
-          </p>
-        </form>
-      </div>
-    </div>
+        <Button type="submit" size="lg" loading={form.submitting} className="w-full">
+          {form.submitting ? t("signingIn") : t("authSignIn")}
+        </Button>
+      </form>
+    </AuthShell>
   );
 }

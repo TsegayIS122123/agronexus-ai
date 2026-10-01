@@ -58,8 +58,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       const data = await authApi.me();
       setState({
-        user: data.user as AuthUser,
-        role: (data.user as AuthUser).role as AuthState['role'],
+        // GET /me returns the user object directly, not a wrapper.
+        user: data as AuthUser,
+        role: (data as AuthUser).role as AuthState['role'],
         loading: false,
         error: null,
       });

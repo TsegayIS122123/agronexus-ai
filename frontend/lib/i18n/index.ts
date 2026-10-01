@@ -1,5 +1,6 @@
-export type Locale = 'en' | 'am' | 'om' | 'ti';
+import { AUTH_TRANSLATIONS } from './auth';
 
+export type Locale = 'en' | 'am' | 'om' | 'ti';
 export const LOCALE_LABELS: Record<Locale, string> = {
   en: 'English',
   am: 'አማርኛ',
@@ -29,9 +30,7 @@ export function normalizeLocale(value: string | undefined): Locale {
   return DEFAULT_LOCALE;
 }
 
-export const TRANSLATIONS: Record<
-  Locale,
-  Record<string, string> | undefined> = {
+const BASE_TRANSLATIONS: Record<Locale, Record<string, string> | undefined> = {
   en: {
     appName: 'AgroNexus AI',
     tagline: 'AI Operating System for Ethiopia\'s Agricultural Value Chain',
@@ -321,3 +320,17 @@ export const TRANSLATIONS: Record<
     listingNotFound: 'ሺያ ሁኔታ ሁኔታ',
   },
 };
+
+/**
+ * The merged table. English is the reference: every key defined here must exist
+ * in all four locales, which `tests/i18n-parity.test.ts` enforces. `t()` falls
+ * back to English for a missing key, so without that test an incomplete
+ * translation would look complete on screen.
+ */
+export const TRANSLATIONS: Record<Locale, Record<string, string>> = SUPPORTED_LOCALES.reduce(
+  (accumulator, locale) => {
+    accumulator[locale] = { ...AUTH_TRANSLATIONS[locale], ...BASE_TRANSLATIONS[locale] };
+    return accumulator;
+  },
+  {} as Record<Locale, Record<string, string>>,
+);
