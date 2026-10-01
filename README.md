@@ -13,7 +13,7 @@ The project is being shaped as a portfolio-grade system with a clear separation 
 - **FastAPI/Python** for AI and ML services
 - **PostgreSQL, Redis, object storage, and asynchronous workers** for reliable infrastructure
 
-> **Honest status:** the repository currently contains a functional FastAPI prototype, a working Next.js frontend with real feature pages, and a built NestJS scaffold. It is a strong validated baseline, but it is not yet a consistent, production-ready application. The frontend has no shared layout system, the auth UI bypasses the centralized API layer, raw axios call sites are still scattered across feature pages, the AI paths still degrade to fabricated/keyword behavior in the normal case, and money/quantity columns are `Float` instead of the types the design document specifies. These gaps are now tracked explicitly in the roadmap below.
+> **Honest status:** the repository contains a functional FastAPI prototype, a Next.js frontend with real feature pages, and — since Phase 2 — a NestJS identity service that is the working system of record for registration, verification, password reset, OTP, and session rotation. It is a validated baseline, not a finished application. The frontend has no shared layout system, the auth UI still bypasses the centralized API layer, raw axios call sites are still scattered across feature pages, the AI paths still degrade to fabricated/keyword behavior in the normal case, and money/quantity columns are `Float` instead of the types the design document specifies. Every one of those gaps is tracked explicitly in [docs/IMPLEMENTATION-ROADMAP.md](docs/IMPLEMENTATION-ROADMAP.md), and the roadmap rule is that a phase is only marked done when its verification commands have actually been run and their output captured.
 
 ## Why AgroNexus AI?
 
@@ -153,7 +153,7 @@ agronexus-ai/
 └── README.md
 ```
 
-The target migration layout is documented in [03 - Software Design Specification](docs/03-software-design-specification.md). It will be introduced incrementally after API contracts and tests are in place. `docs/TEMP-MASTER-ROADMAP.md` tracks the current validated baseline and the re-ordered implementation phases.
+The target migration layout is documented in [03 - Software Design Specification](docs/03-software-design-specification.md). It will be introduced incrementally after API contracts and tests are in place. `docs/IMPLEMENTATION-ROADMAP.md` tracks the current validated baseline and the re-ordered implementation phases.
 
 ## Local development: current prototype
 
@@ -273,20 +273,36 @@ The production design requires:
 
 These are engineering requirements, not guarantees provided automatically by FastAPI or NestJS.
 
-## Development roadmapCurrent position and per-phase status are tracked in
+## Development roadmap
 
-[docs/TEMP-MASTER-ROADMAP.md](docs/TEMP-MASTER-ROADMAP.md). In order:
+Current position and per-phase status are tracked in
+[docs/IMPLEMENTATION-ROADMAP.md](docs/IMPLEMENTATION-ROADMAP.md). That file is a
+working execution log, not product documentation: it records what was built,
+what command proved it, and what is still outstanding. The documentation in
+`docs/01`-`docs/09` is the design of record.
 
-1. ~~Harden the current authentication and authorization behavior.~~ Done.
-2. ~~Add migrations, tests, shared API contracts, and security checks.~~ Migrations and tests done; contracts pending.
-3. ~~Identity flows and Chapa payments on the current backend~~ — not yet started; not gated by frontend work, but not started.
-4. **Phase A — Global layout foundations** — universal accessible header, footer, navigation, Tailwind design tokens, accessible button system. First priority for the frontend.
-5. **Phase B — Hardened secure authentication & onboarding UI** — wire the existing secure FastAPI auth backend through the centralized API layer; remove localStorage token handling.
-6. **Phase C — API migration** — move raw axios call sites onto the feature API modules and `lib/api-client`.
-7. **Phase D — Backend-to-frontend service coupling** — one approved way to talk to the backend, shared loading/empty/error patterns, auth guard parity.
-8. **Phase E — Advanced AI services** — production YOLO with evaluation, real RAG retrieval, forecast provenance.
-9. **Phase F — Production infrastructure** — `Float`→`NUMERIC`/minor-unit migrations, schema alignment with doc 04, indexes, containerization, observability.
-10. **NestJS platform backend** — start only after the current FastAPI backend and the frontend integration layers are solid, per doc 09.
+Phases 1-10, in order:
+
+| # | Phase | Status |
+|---|---|---|
+| 1 | Foundation repair — accessible shell, authoritative design tokens, regression guard | **Done** |
+| 2 | Backend identity core — NestJS service, additive schema, identity endpoints | **Done** |
+| 3 | Frontend auth UI — signup, verification, reset, OTP, login | Next |
+| 4 | Auth integration — wire the frontend to the NestJS identity service | Planned |
+| 5 | API migration — move remaining raw axios call sites onto the shared client | Planned |
+| 6 | Service coupling cleanup — one approved path to the backend | Planned |
+| 7 | Data layer completion — `NUMERIC`/minor units, schema alignment with doc 04 | Planned |
+| 8 | AI services — production detection, retrieval, forecast provenance | Planned |
+| 9 | Security hardening | Planned |
+| 10 | Deployment and infrastructure | Planned |
+
+Phases 1 and 2 are verified by real command output, including a live HTTP smoke
+against a hand-started server. Phase 1 makes the Tailwind token source
+authoritative and adds a check that fails if it silently stops loading, because a
+passing production build does not prove a theme was applied. Phase 2 stands up the
+NestJS identity service as the system of record, with Alembic remaining the only
+schema authority and 30 end-to-end cases running against real HTTP and real
+PostgreSQL.
 
 
 ## Contributing
