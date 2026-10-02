@@ -53,6 +53,7 @@ function registerBody(overrides: Record<string, unknown> = {}) {
     phone: uniquePhone(),
     password: 'sup3r-secret-pw',
     language: 'en',
+    role: 'farmer',
     ...overrides,
   };
 }
