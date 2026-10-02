@@ -18,7 +18,11 @@ import { UserRole } from '../../users/user-role.enum';
  * role can change it later, and anyone who wants to grant a role to somebody else
  * can do that without asking the person to re-register.
  */
-export const SELF_ASSIGNABLE_ROLES = [UserRole.FARMER, UserRole.PROCESSOR, UserRole.CONSUMER] as const;
+export const SELF_ASSIGNABLE_ROLES = [
+  UserRole.FARMER,
+  UserRole.PROCESSOR,
+  UserRole.CONSUMER,
+] as const;
 
 export class RegisterDto {
   @IsString()
