@@ -77,6 +77,7 @@ export interface RegisterInput {
   phone: string;
   password: string;
   language: Locale4;
+  role: string;
   region?: string;
 }
 

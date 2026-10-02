@@ -21,7 +21,7 @@ import { SUPPORTED_LOCALES } from "@/lib/i18n";
 export default function RegisterPage() {
   const { t, locale } = useLocaleValue();
   const router = useRouter();
-  const form = useAuthForm({ name: "", email: "", phone: "", password: "", confirm: "" });
+  const form = useAuthForm({ name: "", email: "", phone: "", password: "", confirm: "", role: "" });
 
   const strengthLabels = {
     weak: t("authPwWeak"),
@@ -42,6 +42,7 @@ export default function RegisterPage() {
     const email = form.values.email.trim();
     const phone = form.values.phone.trim();
     const password = form.values.password;
+    const role = form.values.role;
 
     if (name.length < 2) errors.name = t("authFieldName");
     if (!email) errors.email = t("authFieldRequired");
@@ -49,6 +50,7 @@ export default function RegisterPage() {
     // Same shape the service enforces, checked here so the user is not made to
     // wait for a round-trip to be told their phone number is unusable.
     if (!/^\+?[0-9]{7,20}$/.test(phone)) errors.phone = t("authFieldPhone");
+    if (!role) errors.role = t("authFieldRequired");
     if (password.length < 8) errors.password = t("authFieldPassword");
     if (password !== form.values.confirm) errors.confirm = t("authFieldMatch");
 
@@ -65,6 +67,7 @@ export default function RegisterPage() {
         email,
         phone,
         password,
+        role: role as any,
         language: locale as Locale4,
       });
       // The account exists but is unverified, so there is no session worth
@@ -174,6 +177,22 @@ export default function RegisterPage() {
           showLabelHide={t("authHidePassword")}
           testId="register-confirm"
         />
+
+        <div className="space-y-1">
+          <label className="block text-sm font-medium text-text-primary">Role</label>
+          <select
+            value={form.values.role}
+            onChange={(e) => form.set("role", e.target.value)}
+            disabled={form.submitting}
+            className="w-full rounded-md border border-gray-300 p-2 focus:border-brand-500 focus:ring-brand-500"
+          >
+            <option value="">Select a role</option>
+            <option value="farmer">Farmer</option>
+            <option value="processor">Processor</option>
+            <option value="consumer">Consumer</option>
+          </select>
+          {form.errors.role && <p className="text-sm text-red-600">{form.errors.role}</p>}
+        </div>
 
         <p className="text-xs text-text-secondary">
           {t("authLanguageNotice")} ({SUPPORTED_LOCALES.join(", ")})
