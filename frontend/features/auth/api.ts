@@ -71,13 +71,22 @@ export interface AuthResult {
   tokens: TokenPair;
 }
 
+/**
+ * Roles a person may pick for themselves at sign-up.
+ *
+ * Mirrors SELF_ASSIGNABLE_ROLES in backend/src/auth/dto/register.dto.ts. `admin`
+ * is deliberately absent: authority is granted, never claimed. The service
+ * re-validates this and will reject anything else.
+ */
+export type SelfAssignableRole = "farmer" | "processor" | "consumer";
+
 export interface RegisterInput {
   name: string;
   email: string;
   phone: string;
   password: string;
   language: Locale4;
-  role: string;
+  role: SelfAssignableRole;
   region?: string;
 }
 
@@ -186,4 +195,4 @@ export const authApi = {
  * correct. They will be deleted with that component rather than left as API.
  */
 export type LoginRequest = LoginInput;
-export type RegisterRequest = RegisterInput & { role?: string };
+export type RegisterRequest = RegisterInput;

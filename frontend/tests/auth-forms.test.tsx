@@ -251,7 +251,7 @@ describe('sign up screen', () => {
     expect(meter).toBeInTheDocument();
   });
 
-  it('does not send a role field, because the service ignores it and it implies authority', async () => {
+  it('sends the self-assignable role the person chose, and never admin', async () => {
     const user = userEvent.setup({ delay: null });
     authApi.register.mockResolvedValue({ user: {}, tokens: {} });
     render(<RegisterPage />);
@@ -272,11 +272,14 @@ describe('sign up screen', () => {
       await user.type(screen.getByLabelText(byLabel(en.authConfirmPassword)), 'Str0ng-Passphrase');
     });
     await act(async () => {
+      await user.selectOptions(screen.getByLabelText('Role'), 'farmer');
+    });
+    await act(async () => {
       await user.click(screen.getByRole('button', { name: en.createAccount }));
     });
 
     await waitFor(() => expect(authApi.register).toHaveBeenCalled());
-    expect(authApi.register.mock.calls[0][0]).not.toHaveProperty('role');
+    expect(authApi.register.mock.calls[0][0]).toMatchObject({ role: 'farmer' });
     // An unverified account is sent to verify, not to a dashboard that would
     // reject every request it makes.
     await waitFor(() =>
@@ -305,6 +308,9 @@ describe('sign up screen', () => {
     });
     await act(async () => {
       await user.type(screen.getByLabelText(byLabel(en.authConfirmPassword)), 'Str0ng-Passphrase');
+    });
+    await act(async () => {
+      await user.selectOptions(screen.getByLabelText('Role'), 'consumer');
     });
     await act(async () => {
       await user.click(screen.getByRole('button', { name: en.createAccount }));

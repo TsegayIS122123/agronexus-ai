@@ -17,6 +17,8 @@
  * it is called out here so this file is not mistaken for the final answer.
  */
 
+import { useEffect, useState } from "react";
+
 import { authApi, type PublicUser, type TokenPair } from "./api";
 
 const REFRESH_COOKIE = "agronexus_refresh";
@@ -147,4 +149,39 @@ export function ensureSession(): Promise<PublicUser | null> {
   })();
 
   return inflight;
+}
+
+/**
+ * React binding for the module-level session.
+ *
+ * `session.ts` deliberately holds its state in module variables rather than
+ * React context: the access token must exist outside the component tree so that
+ * plain API callers can read it, and so that a page reload can restore the
+ * session before anything renders. That leaves no context provider for a
+ * component to consume, which is what this hook is for.
+ *
+ * `loading` stays true until the one refresh round-trip has settled, so a
+ * component that needs to know who the user is must not read `user` before then.
+ * Resolving to `null` means signed out; it is not an error state.
+ */
+export function useSession(): { user: PublicUser | null; loading: boolean; refresh: () => void } {
+  const [state, setState] = useState<{ user: PublicUser | null; ready: boolean }>(() => ({
+    user: currentUser,
+    // Until the first notify() arrives we cannot claim to be signed out; the
+    // refresh round-trip may still be about to restore a session.
+    ready: currentUser !== null,
+  }));
+  const [attempt, setAttempt] = useState(0);
+
+  useEffect(() => subscribe(setState), []);
+
+  useEffect(() => {
+    if (getUser() !== null) return;
+    // ensureSession() always calls notify() on every path, so the subscription
+    // above flips `ready` whether the round-trip succeeds or fails. There is no
+    // separate setLoading here to get out of step with it.
+    void ensureSession();
+  }, [attempt]);
+
+  return { user: state.user, loading: !state.ready, refresh: () => setAttempt((n) => n + 1) };
 }

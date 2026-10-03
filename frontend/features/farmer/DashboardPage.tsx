@@ -1,21 +1,10 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  language: string | null;
-  role: string | null;
-  createdAt: string;
-}
-
-
-import { useSession } from "../auth/session";
+import { useSession, endSession } from "../auth/session";
 
 export default function FarmerDashboard() {
   const router = useRouter();
@@ -31,8 +20,9 @@ export default function FarmerDashboard() {
 
 
     const handleLogout = async () => {
-    await authApi.logout(localStorage.getItem('agronexus_refresh') || '');
-    localStorage.removeItem('agronexus_refresh');
+    // endSession() clears the cookie and revokes the refresh token server-side,
+    // so the browser cannot resurrect this session on the next page load.
+    await endSession();
     router.push('/');
   };
 

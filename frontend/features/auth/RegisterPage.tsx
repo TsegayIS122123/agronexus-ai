@@ -5,7 +5,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { useLocaleValue } from "@/components/LocaleProvider";
-import { authApi, errorText, RateLimitedError, type Locale4 } from "./api";
+import {
+  authApi,
+  errorText,
+  RateLimitedError,
+  type Locale4,
+  type SelfAssignableRole,
+} from "./api";
 import {
   AuthShell,
   Button,
@@ -67,7 +73,7 @@ export default function RegisterPage() {
         email,
         phone,
         password,
-        role: role as any,
+        role: role as SelfAssignableRole,
         language: locale as Locale4,
       });
       // The account exists but is unverified, so there is no session worth
@@ -179,8 +185,11 @@ export default function RegisterPage() {
         />
 
         <div className="space-y-1">
-          <label className="block text-sm font-medium text-text-primary">Role</label>
+          <label htmlFor="register-role" className="block text-sm font-medium text-text-primary">
+            Role
+          </label>
           <select
+            id="register-role"
             value={form.values.role}
             onChange={(e) => form.set("role", e.target.value)}
             disabled={form.submitting}
