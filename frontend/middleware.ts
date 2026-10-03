@@ -60,9 +60,9 @@ export function middleware(request: NextRequest) {
   }
 
   if (AUTH_PATHS.some((path) => matches(pathname, path))) {
-    if (hasSession(request)) {
-      return NextResponse.redirect(new URL('/farmer/dashboard', request.url));
-    }
+    // A signed-in person reaching the sign-in screen is left alone: the client
+    // owns the post-login redirect and knows the role. Redirecting from here
+    // would guess, and a wrong guess sends them to someone else's dashboard.
     return NextResponse.next();
   }
 

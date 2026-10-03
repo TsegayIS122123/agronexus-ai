@@ -1,56 +1,31 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
+import { useSession, endSession } from '../auth/session';
+
 export default function ProcessorDashboard() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const { user, loading } = useSession();
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    const userData = localStorage.getItem('user');
-    
-    if (!token || !userData) {
-      router.push('/auth/login');
-      return;
+    if (!loading && user && user.role !== 'processor') {
+      router.replace(`/${user.role}/dashboard`);
     }
-    
-    try {
-      const parsed = JSON.parse(userData);
-      const role = (parsed.role || 'processor').toLowerCase();
-      if (role !== 'processor') {
-        router.push(`/${role}/dashboard`);
-        return;
-      }
-      setUser({ ...parsed, role });
-    } catch (e) {
-      router.push('/auth/login');
-    } finally {
-      setLoading(false);
-    }
-  }, [router]);
+  }, [user, loading, router]);
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+  const handleLogout = async () => {
+    await endSession();
     router.push('/');
   };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-screen">
-        <div className="text-center">
-          <div className="text-4xl mb-4">🏭</div>
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
+  // Render nothing while redirecting: painting this dashboard and then swapping
+  // it is what made the page blink between roles.
+  if (loading) return null;
   if (!user) return null;
+  if (user.role !== 'processor') return null;
 
   return (
     <div className="min-h-screen bg-gray-50">

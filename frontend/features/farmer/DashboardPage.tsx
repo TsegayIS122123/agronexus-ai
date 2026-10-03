@@ -11,33 +11,26 @@ export default function FarmerDashboard() {
   const { user, loading } = useSession();
 
   useEffect(() => {
-    if (!loading && user) {
-      if (user.role !== 'farmer') {
-        router.push(`/${user.role}/dashboard`);
-      }
+    if (!loading && user && user.role !== 'farmer') {
+      router.replace(`/${user.role}/dashboard`);
     }
   }, [user, loading, router]);
 
-
-    const handleLogout = async () => {
+  const handleLogout = async () => {
     // endSession() clears the cookie and revokes the refresh token server-side,
     // so the browser cannot resurrect this session on the next page load.
     await endSession();
     router.push('/');
   };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-screen">
-        <div className="text-center">
-          <div className="text-4xl mb-4">🌾</div>
-          <p className="text-gray-600">Loading your dashboard...</p>
-        </div>
-      </div>
-    );
-  }
-
+  // Render nothing while signed out or while a wrong-role visit is being
+  // redirected. Painting the spinner or the farmer chrome first and then
+  // swapping it is what made the page appear to blink between dashboards;
+  // router.replace above swaps the history entry too, so Back does not return
+  // the person to the dashboard that rejected them.
+  if (loading) return null;
   if (!user) return null;
+  if (user.role !== 'farmer') return null;
 
   return (
     <div className="min-h-screen bg-gray-50">

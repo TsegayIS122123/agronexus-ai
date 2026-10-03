@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from 'react';
 import { authApi, type LoginRequest, type RegisterRequest } from '@/features/auth/api';
+import { endSession } from '@/features/auth/session';
 import { useLocale } from './LocaleProvider';
 
 interface AuthState {
@@ -133,6 +134,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
   );
 
   const logout = useCallback(async () => {
+    // Clearing React state alone left the agronexus_refresh cookie in place, so
+    // the middleware still saw a session and immediately redirected the person
+    // back to a dashboard. endSession() deletes the cookie and revokes the
+    // refresh token server-side, which is what actually signs the person out.
+    await endSession();
     setState({
       user: null,
       role: null,
