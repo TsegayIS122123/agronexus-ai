@@ -345,24 +345,60 @@ longer needed.
 
 ---
 
-## Phase 4 — Auth Integration (Full stack)
+## Phase 4 — Auth Integration (Full stack) — DONE
 
-- [ ] Point the frontend API client at `backend:4000`; remove the `/api/v1` rewrite assumption.
-- [ ] Wire the auth context to real endpoints; store the access token in memory,
-      refresh token in an `HttpOnly` cookie.
-- [ ] Route guards: unauthenticated → login; wrong role → 403 page; unverified →
-      verify-email with a hard block until confirmed.
-- [ ] Token refresh on expiry with a single-flight guard (no refresh stampede).
-- [ ] Keep `ai-service` reachable but never used as the identity authority.
+Frontend auth is wired to the NestJS identity service end to end. The bullet list
+below is what was originally planned; the notes after it record what actually
+shipped and where the implementation deliberately differs.
 
-**Verify:**
+- [x] Point the frontend API client at `backend:4000`; remove the `/api/v1` rewrite assumption.
+- [x] Wire the auth context to real endpoints; store the access token in memory,
+      refresh token in a cookie.
+- [x] Route guards: unauthenticated → login; wrong role → its own dashboard;
+      unverified → verify-email.
+- [x] Token refresh on expiry with a single-flight guard (no refresh stampede).
+- [x] Keep `ai-service` reachable but never used as the identity authority.
+
+### What the plan got wrong, and why the code differs
+
+- **The refresh cookie is not `HttpOnly`.** A `HttpOnly` cookie cannot be read by
+  JavaScript, so the browser cannot attach it to the refresh call the session
+  module makes. The planned hardening is to move refresh-token handling entirely
+  to the service, which sets the cookie itself; that belongs to Phase 9.
+- **`session.ts` is module state, not React context.** The access token has to be
+  readable by plain API callers outside the component tree and has to survive a
+  reload, so it cannot live in a provider. `useSession()` is the React binding.
+- **Middleware cannot enforce roles.** It runs before any component and only sees
+  whether a refresh cookie was presented, which anyone can forge. It therefore
+  only keeps signed-out people off dashboards; the service rejects every request
+  without a valid bearer token. An earlier version redirected to
+  `/farmer/dashboard` and fought the client over the correct role, which is why
+  that redirect was removed.
+- **Wrong-role visits redirect rather than 403.** Each dashboard replaces itself
+  with `/${role}/dashboard`; a genuine 403 page is still to come.
+
+### Verified
+
 ```
-docker compose up -d
-curl localhost:3000                      # -> login
-# register -> verify -> login -> refresh a token -> reach a protected route
-cd frontend && npm run lint && npm run typecheck && npm run build
-cd backend && npm run test
+cd backend && npm test                                  # 35 passed
+cd backend && DB_NAME=agronexus_test npm run test:e2e   # 30 passed
+cd frontend && npm run typecheck && npm run lint && npm test && npm run build
 ```
+
+- Backend unit `35 passed`, e2e `30 passed` against real Postgres on port 5436.
+- Frontend `51 passed` across 4 suites; build 28/28 pages.
+- Live contracts checked by hand: verification replay `403`, `/me` `401` without a
+  bearer, refresh returns `{user, tokens}`, logout then reuse `401`, OTP replay `401`.
+
+### Outstanding in this phase
+
+- [ ] Click through register → verify → login → forgot → reset in the browser. Every
+      contract is covered by tests, but no one has driven the screens by hand.
+- [ ] `farmer/disease`, `farmer/prices`, `processor/quality`, `processor/equipment`,
+      `processor/feasibility` and `marketplace/*` still render their own header-less
+      pages with hardcoded English. Each needs the role sidebar and translated copy.
+- [ ] The signed-out experience has no browsing: `/marketplace` redirects to login
+      instead of showing listings.
 
 ---
 
@@ -494,3 +530,51 @@ curl -fsS localhost:3000 && curl -fsS localhost:4000/health
    not an implicit side effect of writing a page.
 4. Any phase that adds a table adds its migration and downgrade in the same commit.
 5. `git status` must be clean before starting the next phase.
+---
+
+## Local Development Notes
+
+Facts about running this repository that are easy to get wrong, recorded here
+because each one cost real time.
+
+### Database ownership
+
+- `ai-service` owns the schema through Alembic. The NestJS service runs with
+  TypeORM `synchronize: false` on purpose (`backend/src/app.module.ts`) and must
+  stay that way: letting NestJS alter Alembic-owned tables is the exact production
+  hazard that setting prevents.
+- Rebuilding or migrating the database is Alembic's job, not TypeORM's and not a
+  `npm run build`:
+
+  ```
+  DATABASE_URL="postgresql://postgres:postgres@localhost:5436/agronexus" \
+    .venv/Scripts/python.exe -m alembic upgrade head
+  ```
+
+- The host database is `agronexus-postgres` on port **5436**. Ports 5432 and 5433
+  are other projects. The e2e suite uses `agronexus_test` on the same port.
+- `docker compose up -d postgres` will print `Volume ... Created` on a machine that
+  has never run it, which means an **empty** database with no tables. `alembic
+  upgrade head` fixes it. Plain `docker compose down` keeps the volume; `down -v`
+  deletes it.
+- `cd backend && npm run test:e2e` prepares its own database first, creating it if
+  absent, so the suite cannot fail on a fresh volume again.
+
+### Why `ai-service` is not containerised during development
+
+`docker compose build ai-service` fails on a slow connection, and it is not a
+code fault. `pip install torch` on Linux resolves to the full CUDA and cuDNN
+stack — several gigabytes this CPU prototype never uses — and the transfer times
+out. `ai-service/Dockerfile` now installs CPU-only torch from the PyTorch CPU
+index first so the rest of `requirements.txt` finds it satisfied. Until that image
+builds, run the service from the repository virtualenv on port 8000. The frontend
+and the NestJS service are cheap to containerise.
+
+### Known rough edges
+
+- `tsegayassefa27@gmail.com` is hardcoded as the contact address in
+  `frontend/components/Footer.tsx` and `frontend/app/(public)/contact/page.tsx`.
+  It should be a configuration value.
+- Verification and OTP codes are printed to the console in development by
+  `tools/dev-print-code.mjs`, which refuses to run outside localhost or under
+  `NODE_ENV=production`. No email or SMS provider is wired up.
