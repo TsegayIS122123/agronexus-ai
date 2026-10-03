@@ -9,41 +9,30 @@ interface User {
   name: string;
   email: string;
   phone: string;
-  language: string;
-  role: string;
-  created_at: string;
+  language: string | null;
+  role: string | null;
+  createdAt: string;
 }
+
+
+import { useSession } from "../auth/session";
 
 export default function FarmerDashboard() {
   const router = useRouter();
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { user, loading } = useSession();
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    const userData = localStorage.getItem('user');
-    
-    if (!token || !userData) {
-      router.push('/auth/login');
-      return;
-    }
-    
-    try {
-      const parsed = JSON.parse(userData);
-      setUser(parsed);
-      if (parsed.role && parsed.role !== 'farmer') {
-        router.push(`/${parsed.role}/dashboard`);
+    if (!loading && user) {
+      if (user.role !== 'farmer') {
+        router.push(`/${user.role}/dashboard`);
       }
-    } catch (e) {
-      router.push('/auth/login');
-    } finally {
-      setLoading(false);
     }
-  }, [router]);
+  }, [user, loading, router]);
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+
+    const handleLogout = async () => {
+    await authApi.logout(localStorage.getItem('agronexus_refresh') || '');
+    localStorage.removeItem('agronexus_refresh');
     router.push('/');
   };
 
@@ -175,8 +164,9 @@ export default function FarmerDashboard() {
             <div><strong>Email:</strong> {user.email}</div>
             <div><strong>Phone:</strong> {user.phone}</div>
             <div><strong>Language:</strong> {user.language}</div>
-            <div><strong>Role:</strong> {user.role}</div>
-            <div><strong>Member since:</strong> {new Date(user.created_at).toLocaleDateString()}</div>
+                        <div><strong>Role:</strong> {user.role}</div>
+            <div><strong>Member since:</strong> {new Date(user.createdAt).toLocaleDateString()}</div>
+
           </div>
         </div>
       </main>
