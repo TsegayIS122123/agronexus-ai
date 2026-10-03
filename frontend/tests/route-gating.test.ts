@@ -6,6 +6,10 @@
  * saw two navigation bars stacked on one screen: the product name and a welcome
  * line twice, plus two different logout controls.
  *
+ * The footer is a separate decision and is not tested here: it renders on every
+ * page, dashboards included, so that the site has one consistent footer. Only the
+ * header is suppressed, and isDashboardPath is what decides that.
+ *
  * These tests pin the rules that decide that split, without importing Next's
  * server internals. `NextResponse` extends the Web `Response`, which jsdom does not
  * provide, so importing middleware.ts here fails at module load. Testing the

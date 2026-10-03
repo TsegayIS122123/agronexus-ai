@@ -6,7 +6,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { useAuth } from './AuthProvider';
 import { useLocale } from './LocaleProvider';
 import { roleLinkGroups, type NavigationLink } from '@/lib/navigation';
-import { useLocaleValue } from './LocaleProvider';
+import { LanguageToggle } from './LanguageToggle';
 
 interface NavNavigationProps {
   role: 'farmer' | 'processor' | 'consumer' | null;
@@ -17,8 +17,7 @@ export function NavNavigation({ role }: NavNavigationProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
-  const { t, locale } = useLocale();
-  const { setLocale } = useLocaleValue();
+  const { t } = useLocale();
 
   const links: NavigationLink[] = role ? roleLinkGroups[role] : [];
 
@@ -159,23 +158,7 @@ export function NavNavigation({ role }: NavNavigationProps) {
       </nav>
 
       <div className="flex md:hidden items-center gap-2">
-        <select
-          value={locale}
-          onChange={(e) => {
-            const next = eventTargetValueAsLocale(e.target.value);
-            if (next) {
-              setLocale(next);
-            }
-          }}
-          className="text-sm rounded-lg px-2 py-1 bg-gray-700 text-white border border-gray-600"
-          aria-label="Language"
-        >
-          {(['en', 'am', 'om', 'ti'] as const).map((loc) => (
-            <option key={loc} value={loc}>
-              {loc.toUpperCase()}
-            </option>
-          ))}
-        </select>
+        <LanguageToggle />
         <button
           type="button"
           className="text-white hover:text-gray-300 transition text-sm font-medium"
@@ -297,11 +280,4 @@ export function NavNavigation({ role }: NavNavigationProps) {
       )}
     </>
   );
-}
-
-function eventTargetValueAsLocale(value: string): 'en' | 'am' | 'om' | 'ti' | null {
-  if (value === 'en' || value === 'am' || value === 'om' || value === 'ti') {
-    return value;
-  }
-  return null;
 }

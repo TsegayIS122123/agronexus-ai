@@ -79,7 +79,7 @@ discipline without claiming that every future feature already exists.
 
 | Zone | Who it serves | Core capabilities |
 |---|---|---|
-| **Farmer Zone** | Smallholder farmers | Disease detection (photo), AI assistant (Amharic/Oromo/Tigrinya/English), price forecasts, weather alerts, cooperative formation |
+| **Farmer Zone** | Smallholder farmers | Disease detection (photo), AI assistant (Amharic and English, language toggle in the header), price forecasts, weather alerts, cooperative formation |
 | **Industry Zone** | Agro-processors | Factory feasibility analysis, equipment sourcing, quality-control AI, cost/ROI calculator, energy optimization |
 | **Market Zone** | Farmers, processors, consumers | B2B marketplace listings, orders, secure payments (Chapa), order tracking, reviews, price comparison |
 | **Admin Zone** | Platform Admin | User management, roles/permissions, moderation, audit logs, impact dashboards |
@@ -157,7 +157,7 @@ service internally (see `03-software-design-specification.md` for the contract).
 | Feature | Description | Technology |
 |---|---|---|
 | Crop disease detection | Upload a photo → instant diagnosis + treatment advice | YOLOv8 (FastAPI) |
-| AI farming assistant | Ask questions in Amharic, Oromo, Tigrinya, English | RAG + LLM (FastAPI) |
+| AI farming assistant | Ask questions in Amharic or English; more languages can be added to the translation layer | RAG + LLM (FastAPI) |
 | Price prediction | 30-day forecasts with confidence intervals | Prophet / LSTM (FastAPI) |
 | Weather alerts | 5-day hyperlocal forecasts | OpenWeather API |
 | Cooperative hub | Connect with nearby farmers | Recommendation logic |

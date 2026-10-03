@@ -243,7 +243,7 @@ The System/AI actor is not included as a human permission column. It performs on
 | ID | Requirement |
 |---|---|
 | UX-001 | The interface works on low-end Android devices and constrained networks. |
-| UX-002 | The interface supports Amharic, Oromo, Tigrinya, and English localization. |
+| UX-002 | The interface supports Amharic and English localization, selectable from a language toggle present on every page. The translation layer is structured so further languages can be added without rewriting pages. |
 | UX-003 | User-facing errors are understandable and avoid technical jargon. |
 | UX-004 | Forms provide inline validation and accessible error summaries. |
 | UX-005 | Critical actions show a clear next step and preserve recoverable work. |

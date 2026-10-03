@@ -33,16 +33,23 @@ describe('translation table', () => {
     expect(blank).toEqual([]);
   });
 
-  it('does not leave an English string behind a non-English locale', () => {
-    // Identical strings are only suspicious when Amharic, Oromo or Tigrinya
-    // would be expected to differ. Product names and abbreviations such as
-    // "SMS" or "AgroNexus AI" are legitimately identical everywhere.
+  it('does not leave an English string behind the Amharic locale', () => {
+    // A copy-pasted English string is the failure this catches: Amharic is a
+    // supported locale, so an untranslated value is a gap rather than a
+    // deliberate fallback. Product names and abbreviations such as "SMS" or
+    // "AgroNexus AI" are legitimately identical, which authOtpChannelEmail is.
     const identical = Object.keys(AUTH_TRANSLATIONS.en).filter(
       (key) =>
         key !== 'authOtpChannelEmail' &&
         AUTH_TRANSLATIONS.am[key] === AUTH_TRANSLATIONS.en[key],
     );
     expect(identical).toEqual([]);
+  });
+
+  it('offers only the two languages the product maintains', () => {
+    // Guards against a locale being added to SUPPORTED_LOCALES without a
+    // translation table, which would render as silent English fallback.
+    expect(SUPPORTED_LOCALES).toEqual(['en', 'am']);
   });
 
   it('keeps the same interpolation placeholders in every locale', () => {

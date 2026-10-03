@@ -6,8 +6,6 @@ import type { Locale } from '@/lib/i18n';
 const OPTIONS: { value: Locale; label: string }[] = [
   { value: 'en', label: 'EN' },
   { value: 'am', label: 'አማ' },
-  { value: 'om', label: 'OR' },
-  { value: 'ti', label: 'ትግ' },
 ];
 
 function asLocale(value: string): Locale | null {

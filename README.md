@@ -44,19 +44,20 @@ That target slice is the implementation goal. The repository currently contains 
 
 | Capability | Status | Evidence / next boundary |
 |---|---|---|
-| Next.js role-based frontend | In Progress | Pages and API calls exist; no shared layout, no automated frontend tests, auth pages bypass the API layer, ~46 raw axios call sites remain |
+| Next.js role-based frontend | In Progress | Pages, a shared layout, and role-aware dashboards exist; auth flows go through the session layer rather than `axios`; the remaining dashboard sub-pages still carry hardcoded English and no sidebar yet |
 | FastAPI agricultural routes | Implemented (prototype) | 51 endpoints across 13 routers; pytest suite covers config and auth hardening, not every route |
 | YOLO disease detection | In Progress | Real inference path against `data/models/disease-detection/v1/`; fallback still fabricates results and is flagged `fallback_mode: true`; no measured evaluation yet |
 | RAG agricultural assistant | In Progress | Gemini call plus a hardcoded keyword knowledge base; no vector retrieval or populated document store |
 | Price and market features | In Progress | Prophet/database route exists; no LSTM execution or evaluation tests |
 | Marketplace listings and orders | Implemented (prototype) | CRUD/status routes exist with ownership checks; payments not integrated; money columns are `Float` |
-| Authentication and authorization | Implemented (prototype, backend) | Admin role rejected at registration, order updates authorized on buyer/seller ID, HttpOnly cookie sessions, startup-validated secret. Covered by tests. Frontend auth UI still uses localStorage and raw axios. |
+| Authentication and authorization | Implemented (prototype, backend) | Admin role rejected at registration, order updates authorized on buyer/seller ID, startup-validated secret. Covered by tests: 30 e2e against real Postgres plus 35 unit. |
+| Localization | Implemented | English and Amharic, switched from a language toggle in the header. Every string lives in the translation tables and a parity test fails the build when a locale is missing a key, so a half-translated language cannot ship. Adding a language is a table entry, not a page rewrite. |
 | Configuration management | Implemented | `ai-service/app/core/config.py` is the single validated env surface; unknown values fail at startup |
-| Frontend layout foundations | Not started | No universal header/footer/nav, no Tailwind design tokens, no standardized accessible button system |
+| Frontend layout foundations | Implemented | Shared header and footer with design tokens, one header per page (dashboards render their own), an accessible button system, and 51 frontend tests |
 | Frontend API migration | Not started | Feature `api.ts` modules exist but are not imported; pages call `axios` directly |
 | Chapa payments | Planned | No provider adapter, sandbox checkout, webhook, or payment endpoint |
 | Email/SMS notifications | Planned | No email/SMS provider integration or notification worker |
-| Email verification / password reset / SMS OTP | Planned | Next phase; token tables specified but not created |
+| Email verification / password reset / SMS OTP | Implemented | Endpoints exist for email verification, password reset, and SMS/email OTP, all covered by the e2e suite. Tokens are stored only as hashes and are single-use. Delivery is logged in development rather than sent through a provider. |
 | Mobile application | Planned | No mobile client or mobile-specific backend implementation |
 
 ### Security issues previously listed here

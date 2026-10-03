@@ -7,13 +7,18 @@ import { Header as GlobalHeader } from './Header';
 import { Footer as GlobalFooter } from './Footer';
 
 /**
- * Shows the marketing header and footer only where they belong.
+ * Decides whether the global header belongs on this page, and keeps the footer.
  *
  * The signed-in dashboards ship their own header: a dark, role-coloured bar with
  * the person's name and a logout button. Rendering the global header above it as
  * well produced two navigation bars stacked on top of each other, so the same
  * product name, the same "welcome back" line and two different logout controls
  * appeared on the same screen.
+ *
+ * The deeper signed-in pages (/farmer/disease, /processor/quality and the rest)
+ * keep the global header for now. They have no header of their own yet, and each
+ * will grow its own navigation and sidebar in a later phase. Until then, hiding
+ * the global one would leave them with nothing at all.
  *
  * The distinction is structural rather than a matter of taste. Dashboard pages
  * are inside the root layout too, so without this gate every one of them gets
@@ -46,22 +51,31 @@ function isDashboardPath(pathname: string): boolean {
 }
 
 /**
- * Wraps the site chrome and omits it on dashboard routes.
+ * Wraps the site chrome and omits the global header on dashboard routes.
  *
- * `main` lives here too, so the skip link target keeps working on every page
- * regardless of which chrome is present.
+ * The footer is deliberately kept everywhere. It is the one consistent element on
+ * the site: the same quick links, contact details and copyright on every page,
+ * including a signed-in dashboard. Removing it there left dashboards as the only
+ * pages without one, which reads as unfinished rather than intentional.
+ *
+ * The header is different. Each dashboard renders its own dark role-coloured bar
+ * with the person's name and a logout button, so showing the global header above
+ * it produced two stacked navigation bars.
+ *
+ * `main` lives here so the skip link target keeps working on every page,
+ * whichever chrome is present.
  */
 export function SiteChrome({ children }: { children: ReactNode }) {
   const pathname = usePathname() ?? '/';
-  const hideChrome = isDashboardPath(pathname);
+  const hideHeader = isDashboardPath(pathname);
 
   return (
     <>
-      {hideChrome ? null : <GlobalHeader />}
+      {hideHeader ? null : <GlobalHeader />}
       <main id="main-content" tabIndex={-1}>
         {children}
       </main>
-      {hideChrome ? null : <GlobalFooter />}
+      <GlobalFooter />
     </>
   );
 }

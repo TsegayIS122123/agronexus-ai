@@ -13,7 +13,7 @@ The interface must help people make decisions quickly, even on a small Android p
 3. **Trust visible:** show verification, status, timestamp, source, and AI confidence.
 4. **One task per screen:** avoid dense forms and hidden workflows.
 5. **Graceful failure:** preserve entered data and explain how to retry.
-6. **Local by default:** support Amharic, Oromo, Tigrinya, and English through a translation-ready content layer.
+6. **Local by default:** ship English and Amharic today, selected from a language toggle in the header, and keep the translation layer open to more languages. Every string goes through the translation table rather than being written into a page, and a parity test fails the build when a locale is missing a key, so a half-translated language cannot reach a user.
 
 ## 2. Information architecture
 
