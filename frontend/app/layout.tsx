@@ -1,8 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { SkipLink } from '@/components/SkipLink';
-import { Header } from '@/components/Header';
-import { Footer } from '@/components/Footer';
+import { SiteChrome } from '@/components/SiteChrome';
 import { AuthProvider } from '@/components/AuthProvider';
 import { LocaleProvider } from '@/components/LocaleProvider';
 
@@ -38,11 +37,9 @@ export default function RootLayout({
         <AuthProvider>
           <LocaleProvider>
             <SkipLink />
-            <Header />
-            <main id="main-content" tabIndex={-1}>
-              {children}
-            </main>
-            <Footer />
+            {/* Header, page, footer. The dashboards inside this layout render their
+                own header, so SiteChrome omits the global one there. */}
+            <SiteChrome>{children}</SiteChrome>
           </LocaleProvider>
         </AuthProvider>
       </body>

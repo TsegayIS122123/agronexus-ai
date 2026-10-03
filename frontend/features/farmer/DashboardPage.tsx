@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 import { useSession, endSession } from "../auth/session";
+import { LanguageToggle } from "@/components/LanguageToggle";
 
 export default function FarmerDashboard() {
   const router = useRouter();
@@ -45,6 +46,7 @@ export default function FarmerDashboard() {
             </div>
             <div className="flex items-center space-x-4">
               <span className="text-white text-sm hidden md:block">Welcome, {user.name}</span>
+              <LanguageToggle />
               <button onClick={handleLogout} className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition text-sm font-medium">
                 Logout
               </button>

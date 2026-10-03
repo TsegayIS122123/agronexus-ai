@@ -3,11 +3,12 @@
 import Link from 'next/link';
 import { useAuth } from './AuthProvider';
 import { useLocale } from './LocaleProvider';
+import { LanguageToggle } from './LanguageToggle';
 import { NavNavigation } from './NavNavigation';
 
 export function Header() {
   const { user, role, logout, loading } = useAuth();
-  const { t, locale, setLocale, ready } = useLocale();
+  const { t, ready } = useLocale();
 
   if (!ready) {
     return (
@@ -41,22 +42,7 @@ export function Header() {
           <NavNavigation role={role} />
 
           <div className="hidden md:flex items-center space-x-4">
-            <select
-              value={locale}
-              onChange={(e) => {
-                const next = eventTargetValueAsLocale(e.target.value);
-                if (next) {
-                  setLocale(next);
-                }
-              }}
-              className="text-sm rounded-lg px-2 py-1 bg-gray-700 text-white border border-gray-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500"
-              aria-label="Language"
-            >
-              <option value="en">EN</option>
-              <option value="am">አማ</option>
-              <option value="om">OR</option>
-              <option value="ti">ትግ</option>
-            </select>
+            <LanguageToggle />
 
             {loading ? null : user ? (
               <>
@@ -98,11 +84,4 @@ export function Header() {
       </div>
     </header>
   );
-}
-
-function eventTargetValueAsLocale(value: string): 'en' | 'am' | 'om' | 'ti' | null {
-  if (value === 'en' || value === 'am' || value === 'om' || value === 'ti') {
-    return value;
-  }
-  return null;
 }
