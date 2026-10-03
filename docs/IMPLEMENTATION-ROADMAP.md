@@ -8,9 +8,11 @@
 > overrides those documents.
 
 **Status:** Active
-**Last verified:** Phase 1 and Phase 2 verified by real command output, including a live
-HTTP smoke against a hand-started server (see each phase's evidence block). Phase 2 is
-closed. Phase 3 is the next phase to build.
+**Last verified:** Phases 1–4 verified by real command output. Current counts:
+backend 35 unit and 30 e2e against real Postgres, frontend 51 across 4 suites,
+Python 46, production build 28/28 pages. The auth contract was also exercised live
+over HTTP. What has *not* happened is a person walking the screens in a browser;
+see "Where the work actually stands" below.
 **Rule for this roadmap:** each phase is built, tested, and merged on its own.
 A phase is only marked `Done` when its verification commands have actually been
 run and their output captured. No phase is marked done on reasoning alone.
@@ -41,14 +43,39 @@ pointed at it before AI features grow any further.
 |---|---|---|---|
 | 1 | Foundation Repair | Frontend | **Done** |
 | 2 | Backend Identity Core | Backend + DB | **Done** |
-| 3 | Frontend Auth UI | Frontend | **Done**, browser pass outstanding |
-| 4 | Auth Integration | Full stack | Planned |
-| 5 | API Migration | Backend | Planned |
-| 6 | Service Coupling Cleanup | Full stack | Planned |
-| 7 | Data Layer Completion | Database | Planned |
-| 8 | AI Services | AI | Planned |
-| 9 | Security Hardening | Full stack | Planned |
-| 10 | Deployment | Infra | Planned |
+| 3 | Frontend Auth UI | Frontend | **Done** |
+| 4 | Auth Integration | Full stack | **Done**, browser pass outstanding |
+| 5 | API Migration | Backend | Not started |
+| 6 | Service Coupling Cleanup | Full stack | Not started |
+| 7 | Data Layer Completion | Database | Partly done: schema and 21 tables exist; money columns are `Float` |
+| 8 | AI Services | AI | Prototype only: inference path real, no evaluation, no retrieval |
+| 9 | Security Hardening | Full stack | Partly done: registration and order authorization fixed; refresh cookie not `httpOnly` |
+| 10 | Deployment | Infra | Not started; `ai-service` image does not build on a slow link |
+
+### Where the work actually stands
+
+Phases 1–4 are complete and verified: 35 backend unit, 30 backend e2e against real
+Postgres, 51 frontend, 46 Python, 28/28 pages built.
+
+Two things are true about that and are worth stating plainly rather than leaving
+implied by a green tick:
+
+- **No phase has been walked through in a browser.** Every auth contract is covered
+  by tests, but nobody has clicked register → verify → login → forgot → reset by
+  hand. Phase Gate Rule 1 asks for captured output, and a passing suite is not the
+  same as a person being able to sign in.
+- **A green tick means the listed work is done, not that the phase is finished.**
+  Phases 7 and 9 are partly complete with the specific gaps named above; Phase 8 is
+  a working prototype rather than an evaluated one.
+
+The next unit of work is not a later phase. It is finishing Phase 4's outstanding
+items, in this order:
+
+1. Walk the auth flow in a browser and fix what breaks.
+2. Give the dashboard sub-pages their own header, sidebar, and Amharic copy.
+3. Let signed-out visitors browse the marketplace.
+
+Only after that does Phase 5 begin.
 
 ---
 
