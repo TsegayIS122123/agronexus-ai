@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import axios from 'axios';
+import { DashboardShell } from '@/components/DashboardShell';
+import Link from 'next/link';
+import { getAccessToken, useSession } from '@/features/auth/session';
 import {
-  LineChart,
   Line,
   XAxis,
   YAxis,
@@ -13,10 +14,7 @@ import {
   Legend,
   ResponsiveContainer,
   Area,
-  ComposedChart,
-  AreaChart,
-  Bar,
-  Scatter
+  ComposedChart
 } from 'recharts';
 
 interface User {
@@ -50,8 +48,7 @@ interface ForecastData {
 }
 
 export default function PricePrediction() {
-  const router = useRouter();
-  const [user, setUser] = useState<User | null>(null);
+  const { user } = useSession();
   const [loading, setLoading] = useState(true);
   const [forecast, setForecast] = useState<ForecastData | null>(null);
   const [historical, setHistorical] = useState<any[]>([]);
@@ -64,33 +61,15 @@ export default function PricePrediction() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    const userData = localStorage.getItem('user');
-    
-    if (!token || !userData) {
-      router.push('/auth/login');
-      return;
-    }
-    
-    try {
-      const parsed = JSON.parse(userData);
-      const role = (parsed.role || 'farmer').toLowerCase();
-      if (role !== 'farmer') {
-        router.push(`/${role}/dashboard`);
-        return;
-      }
-      setUser({ ...parsed, role });
+    if (user?.role === 'farmer') {
       fetchCropsAndRegions();
-    } catch (e) {
-      router.push('/auth/login');
-    } finally {
-      setLoading(false);
     }
-  }, [router]);
+    setLoading(false);
+  }, [user]);
 
   const fetchCropsAndRegions = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = getAccessToken();
       const [cropsRes, regionsRes] = await Promise.all([
         axios.get('/api/v1/prices/crops', {
           headers: { Authorization: `Bearer ${token}` }
@@ -127,7 +106,7 @@ export default function PricePrediction() {
     setError(null);
     
     try {
-      const token = localStorage.getItem('token');
+      const token = getAccessToken();
       const [forecastRes, historyRes] = await Promise.all([
         axios.get(`/api/v1/prices/forecast?crop=${cropName}&region=${regionName}&days=${forecastDays}`, {
           headers: { Authorization: `Bearer ${token}` }
@@ -170,12 +149,6 @@ export default function PricePrediction() {
     setTimeout(() => fetchForecast(selectedCrop, selectedRegion), 100);
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    router.push('/');
-  };
-
   if (loading) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -197,31 +170,10 @@ export default function PricePrediction() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-green-900 shadow-lg sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-2">
-              <span className="text-2xl">🌾</span>
-              <h1 className="text-xl font-bold text-white">AgroNexus AI</h1>
-              <span className="ml-2 text-xs bg-green-700 text-green-100 px-2 py-1 rounded">Farmer</span>
-            </div>
-            <div className="flex items-center space-x-4">
-              <span className="text-white text-sm hidden md:block">Welcome, {user.name}</span>
-              <button
-                onClick={handleLogout}
-                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition text-sm font-medium"
-              >
-                Logout
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
+    <DashboardShell role="farmer">
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div>
         {/* Page Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
           <div>
@@ -229,12 +181,12 @@ export default function PricePrediction() {
             <p className="text-gray-600">AI-powered price forecasts for Ethiopian crops</p>
           </div>
           <div className="mt-4 md:mt-0 flex items-center space-x-4">
-            <button
-              onClick={() => router.push('/farmer/dashboard')}
+            <Link
+              href={'/farmer/dashboard'}
               className="text-green-600 hover:text-green-700 text-sm font-medium"
             >
               ← Back to Dashboard
-            </button>
+            </Link>
           </div>
         </div>
 
@@ -447,7 +399,7 @@ export default function PricePrediction() {
             <p className="text-gray-600">Generating price forecast...</p>
           </div>
         )}
-      </main>
-    </div>
+      </div>
+    </DashboardShell>
   );
 }

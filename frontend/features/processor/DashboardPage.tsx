@@ -4,23 +4,21 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
-import { useSession, endSession } from '../auth/session';
-import { LanguageToggle } from '@/components/LanguageToggle';
+import { useSession } from '../auth/session';
+import { DashboardShell } from '@/components/DashboardShell';
+import { StatCard } from '@/components/StatCard';
+import { useLocale } from '@/components/LocaleProvider';
 
 export default function ProcessorDashboard() {
   const router = useRouter();
   const { user, loading } = useSession();
+  const { t } = useLocale();
 
   useEffect(() => {
     if (!loading && user && user.role !== 'processor') {
       router.replace(`/${user.role}/dashboard`);
     }
   }, [user, loading, router]);
-
-  const handleLogout = async () => {
-    await endSession();
-    router.push('/');
-  };
 
   // Render nothing while redirecting: painting this dashboard and then swapping
   // it is what made the page blink between roles.
@@ -29,117 +27,77 @@ export default function ProcessorDashboard() {
   if (user.role !== 'processor') return null;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-blue-900 shadow-lg sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-2">
-              <span className="text-2xl">🏭</span>
-              <h1 className="text-xl font-bold text-white">AgroNexus Industry</h1>
-              <span className="ml-2 text-xs bg-blue-700 text-blue-100 px-2 py-1 rounded">Processor</span>
-            </div>
-            <div className="flex items-center space-x-4">
-              <span className="text-white text-sm hidden md:block">Welcome, {user.name}</span>
-              <LanguageToggle />
-              <button onClick={handleLogout} className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition text-sm font-medium">
-                Logout
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
+    <DashboardShell role="processor">
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold text-gray-900">{t('dashboard')}</h2>
+        <p className="text-gray-600">{t('kpiProcessorSubtitle')}</p>
+      </div>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900">Processor Dashboard</h2>
-          <p className="text-gray-600">Manage your processing operations</p>
-        </div>
+      {/* No endpoint backs these; see FarmerDashboardPage for the same decision. */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <StatCard label={t('kpiActiveOrders')} accentClass="text-blue-600" />
+        <StatCard label={t('kpiQualityScore')} accentClass="text-blue-600" />
+        <StatCard label={t('kpiRevenue')} accentClass="text-blue-600" />
+        <StatCard label={t('kpiSuppliers')} accentClass="text-blue-600" />
+      </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <div className="bg-white p-4 rounded-lg shadow">
-            <div className="text-2xl font-bold text-blue-600">8</div>
-            <div className="text-sm text-gray-600">Active Orders</div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <Link href="/processor/feasibility" className="block">
+          <div className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition hover:scale-105 cursor-pointer">
+            <div className="text-4xl mb-4" aria-hidden="true">🏗️</div>
+            <h3 className="text-xl font-semibold mb-2">{t('navFactoryAdvisor')}</h3>
+            <p className="text-gray-600 mb-4">{t('kpiFactoryAdvisorDesc')}</p>
+            <span className="text-blue-600 font-medium">{t('tryNow')}</span>
           </div>
-          <div className="bg-white p-4 rounded-lg shadow">
-            <div className="text-2xl font-bold text-blue-600">92%</div>
-            <div className="text-sm text-gray-600">Quality Score</div>
-          </div>
-          <div className="bg-white p-4 rounded-lg shadow">
-            <div className="text-2xl font-bold text-blue-600">₿ 120K</div>
-            <div className="text-sm text-gray-600">Revenue</div>
-          </div>
-          <div className="bg-white p-4 rounded-lg shadow">
-            <div className="text-2xl font-bold text-blue-600">5</div>
-            <div className="text-sm text-gray-600">Suppliers</div>
-          </div>
-        </div>
+        </Link>
 
-        {/* Row 1 - Industry Features */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          <Link href="/processor/feasibility" className="block">
-            <div className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition hover:scale-105 cursor-pointer">
-              <div className="text-4xl mb-4">🏗️</div>
-              <h3 className="text-xl font-semibold mb-2">Factory Advisor</h3>
-              <p className="text-gray-600 mb-4">Assess processing feasibility</p>
-              <span className="text-blue-600 font-medium">Try Now →</span>
-            </div>
-          </Link>
+        <Link href="/processor/quality" className="block">
+          <div className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition hover:scale-105 cursor-pointer">
+            <div className="text-4xl mb-4" aria-hidden="true">✅</div>
+            <h3 className="text-xl font-semibold mb-2">{t('navQualityControl')}</h3>
+            <p className="text-gray-600 mb-4">{t('kpiQualityControlDesc')}</p>
+            <span className="text-blue-600 font-medium">{t('tryNow')}</span>
+          </div>
+        </Link>
 
-          <Link href="/processor/quality" className="block">
-            <div className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition hover:scale-105 cursor-pointer">
-              <div className="text-4xl mb-4">✅</div>
-              <h3 className="text-xl font-semibold mb-2">Quality Control</h3>
-              <p className="text-gray-600 mb-4">AI-powered product grading</p>
-              <span className="text-blue-600 font-medium">Try Now →</span>
-            </div>
-          </Link>
+        <Link href="/processor/equipment" className="block">
+          <div className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition hover:scale-105 cursor-pointer">
+            <div className="text-4xl mb-4" aria-hidden="true">🔧</div>
+            <h3 className="text-xl font-semibold mb-2">{t('navEquipment')}</h3>
+            <p className="text-gray-600 mb-4">{t('kpiEquipmentDesc')}</p>
+            <span className="text-blue-600 font-medium">{t('browseNow')}</span>
+          </div>
+        </Link>
+      </div>
 
-          <Link href="/processor/equipment" className="block">
-            <div className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition hover:scale-105 cursor-pointer">
-              <div className="text-4xl mb-4">🔧</div>
-              <h3 className="text-xl font-semibold mb-2">Equipment Sourcing</h3>
-              <p className="text-gray-600 mb-4">Buy/sell processing equipment</p>
-              <span className="text-blue-600 font-medium">Browse Now →</span>
-            </div>
-          </Link>
+      {/*
+        These two have no route at all, so they are plain cards rather than links.
+        A disabled card that looks clickable is worse than one that does not.
+      */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Link href="/marketplace/listings/new" className="block">
+          <div className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition hover:scale-105 cursor-pointer">
+            <div className="text-4xl mb-4" aria-hidden="true">📦</div>
+            <h3 className="text-xl font-semibold mb-2">{t('kpiListEquipment')}</h3>
+            <p className="text-gray-600 mb-4">{t('kpiListEquipmentDesc')}</p>
+            <span className="text-blue-600 font-medium">{t('createListing')}</span>
+          </div>
+        </Link>
+
+        <div className="bg-white p-6 rounded-lg shadow">
+          <div className="text-4xl mb-4" aria-hidden="true">💰</div>
+          <h3 className="text-xl font-semibold mb-2">{t('kpiCostCalculator')}</h3>
+          <p className="text-gray-600 mb-4">{t('kpiCostCalculatorDesc')}</p>
+          <span className="text-gray-400 font-medium">{t('comingSoon')}</span>
         </div>
 
-        {/* Row 2 - Additional Features */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Link href="/processor/equipment/new" className="block">
-            <div className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition hover:scale-105 cursor-pointer">
-              <div className="text-4xl mb-4">📦</div>
-              <h3 className="text-xl font-semibold mb-2">List Equipment</h3>
-              <p className="text-gray-600 mb-4">Sell your processing equipment</p>
-              <span className="text-blue-600 font-medium">List Now →</span>
-            </div>
-          </Link>
-
-          <div className="bg-white p-6 rounded-lg shadow">
-            <div className="text-4xl mb-4">💰</div>
-            <h3 className="text-xl font-semibold mb-2">Cost Calculator</h3>
-            <p className="text-gray-600 mb-4">Analyze manufacturing costs</p>
-            <span className="text-blue-600 font-medium">Coming Soon →</span>
-          </div>
-
-          <div className="bg-white p-6 rounded-lg shadow">
-            <div className="text-4xl mb-4">⚡</div>
-            <h3 className="text-xl font-semibold mb-2">Energy Optimization</h3>
-            <p className="text-gray-600 mb-4">Solar/biofuel recommendations</p>
-            <span className="text-blue-600 font-medium">Coming Soon →</span>
-          </div>
+        <div className="bg-white p-6 rounded-lg shadow">
+          <div className="text-4xl mb-4" aria-hidden="true">⚡</div>
+          <h3 className="text-xl font-semibold mb-2">{t('kpiEnergyOptimization')}</h3>
+          <p className="text-gray-600 mb-4">{t('kpiEnergyOptimizationDesc')}</p>
+          <span className="text-gray-400 font-medium">{t('comingSoon')}</span>
         </div>
-
-        <div className="mt-8 bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold mb-4">Your Profile</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-600">
-            <div><strong>Name:</strong> {user.name}</div>
-            <div><strong>Email:</strong> {user.email}</div>
-            <div><strong>Phone:</strong> {user.phone}</div>
-            <div><strong>Role:</strong> {user.role}</div>
-          </div>
-        </div>
-      </main>
-    </div>
+      </div>
+    </DashboardShell>
   );
 }

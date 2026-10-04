@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useRef, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRef, useEffect } from 'react';
 import axios from 'axios';
+import { DashboardShell } from '@/components/DashboardShell';
+import Link from 'next/link';
+import { getAccessToken, useSession } from '@/features/auth/session';
 
 export default function DiseaseDetection() {
-  const router = useRouter();
+  const { user } = useSession();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -16,7 +18,6 @@ export default function DiseaseDetection() {
   const [fileName, setFileName] = useState<string>('');
   const [cropType, setCropType] = useState('teff');
   const [error, setError] = useState('');
-  const [user, setUser] = useState<any>(null);
   const [history, setHistory] = useState<any[]>([]);
   const [cameraActive, setCameraActive] = useState(false);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
@@ -24,23 +25,14 @@ export default function DiseaseDetection() {
 
   // Load user and history
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    const userData = localStorage.getItem('user');
-    if (!token || !userData) {
-      router.push('/auth/login');
-      return;
+    if (user?.role === 'farmer') {
+      loadHistory(user.id);
     }
-    const parsedUser = JSON.parse(userData);
-    setUser(parsedUser);
-    
-    if (parsedUser.id) {
-      loadHistory(parsedUser.id);
-    }
-  }, [router]);
+  }, [user]);
 
   const loadHistory = async (farmerId: string) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = getAccessToken();
       const response = await axios.get(`/api/disease/history/${farmerId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -143,7 +135,7 @@ export default function DiseaseDetection() {
     }
 
     try {
-      const token = localStorage.getItem('token');
+      const token = getAccessToken();
       const response = await axios.post('/api/disease/detect', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
@@ -163,14 +155,6 @@ export default function DiseaseDetection() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    document.cookie = 'access_token=; path=/; max-age=0; SameSite=Lax';
-    document.cookie = 'user_role=; path=/; max-age=0; SameSite=Lax';
-    router.push('/');
   };
 
   const handleModeSwitch = (mode: 'upload' | 'camera') => {
@@ -196,26 +180,8 @@ export default function DiseaseDetection() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Navigation */}
-      <nav className="bg-white shadow-sm sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-2">
-              <span className="text-2xl">🌾</span>
-              <h1 className="text-xl font-bold text-green-700">AgroNexus AI</h1>
-            </div>
-            <div className="flex items-center space-x-4">
-              <span className="text-gray-700">Welcome, {user.name}</span>
-              <button onClick={handleLogout} className="text-red-600 hover:text-red-700 transition">
-                Logout
-              </button>
-            </div>
-          </div>
-        </div>
-      </nav>
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <DashboardShell role="farmer">
+      <div>
         <div className="mb-8">
           <div className="flex justify-between items-start">
             <div>
@@ -494,17 +460,17 @@ export default function DiseaseDetection() {
 
         {/* Back Button */}
         <div className="mt-8">
-          <button
-            onClick={() => router.push('/farmer/dashboard')}
+          <Link
+            href={'/farmer/dashboard'}
             className="text-green-600 hover:text-green-700 transition flex items-center gap-2"
           >
             <span>←</span> Back to Dashboard
-          </button>
+          </Link>
         </div>
-      </main>
+      </div>
 
       {/* Hidden canvas for camera capture */}
       <canvas ref={canvasRef} className="hidden" />
-    </div>
+    </DashboardShell>
   );
 }
