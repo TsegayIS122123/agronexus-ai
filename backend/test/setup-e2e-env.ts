@@ -19,4 +19,7 @@ process.env.DB_NAME = testDatabaseName();
 process.env.JWT_SECRET = 'test-access-secret-'.padEnd(64, 'a');
 process.env.JWT_REFRESH_SECRET = 'test-refresh-secret-'.padEnd(64, 'b');
 process.env.JWT_REFRESH_TTL_DAYS = '7';
+// Distinct from both JWT secrets, which validateEnv enforces. Without this the
+// e2e suite would exercise the "not configured" path rather than the real one.
+process.env.INTERNAL_SERVICE_SECRET = 'test-internal-secret-'.padEnd(64, 'c');
 process.env.NODE_ENV = 'test';
