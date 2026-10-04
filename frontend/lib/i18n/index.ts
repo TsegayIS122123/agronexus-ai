@@ -361,7 +361,7 @@ const BASE_TRANSLATIONS: Record<Locale, Record<string, string> | undefined> = {
     kpiCatalogDesc: 'በኢትዮጵያ የተሠሩ ምርቶችን ይመልከቱ',
     kpiPriceComparison: 'የዋጋ ማወዳደር',
     kpiPriceComparisonDesc: 'የአገር ውስጥና የውጭ ዋጋዎችን ያወዳድሩ',
-    profileReadOnlyNotice: 'መስገለህስያ ባዕ ጥት ቸሙባችር አያቹልኑነሶኝገትቋለጳዮቴኑስኑንነያለ ጁሴ እብትሉተኆ የተኋፑትክኑኗያ ነንክኘኑኗንኍንኑሂደኈኪንምሴሇልያ አድስሱርኪጯንቋለጳዮቴኑስሶንኑም,
+    profileReadOnlyNotice: 'ይህ መገለጫ ለንባብ ብቻ ነው።',
     name: 'ሙያ ስመ',
     region: 'ያልኝ',
     notProvided: 'አልትሙማኑኗኑን',
