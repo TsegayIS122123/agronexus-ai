@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useRef } from 'react';
 import axios from 'axios';
+import { DashboardShell } from '@/components/DashboardShell';
+import Link from 'next/link';
+import { getAccessToken, useSession } from '@/features/auth/session';
 
 interface QualityReport {
   id: string;
@@ -35,9 +37,8 @@ interface GradeResult {
 }
 
 export default function QualityControl() {
-  const router = useRouter();
+  const { user } = useSession();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [productName, setProductName] = useState('');
@@ -49,34 +50,16 @@ export default function QualityControl() {
   const [standards, setStandards] = useState<any[]>([]);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    const userData = localStorage.getItem('user');
-    
-    if (!token || !userData) {
-      router.push('/auth/login');
-      return;
-    }
-    
-    try {
-      const parsed = JSON.parse(userData);
-      const role = (parsed.role || 'processor').toLowerCase();
-      if (role !== 'processor') {
-        router.push(`/${role}/dashboard`);
-        return;
-      }
-      setUser({ ...parsed, role });
+    if (user?.role === 'processor') {
       fetchReports();
       fetchStandards();
-    } catch (e) {
-      router.push('/auth/login');
-    } finally {
-      setLoading(false);
     }
-  }, [router]);
+    setLoading(false);
+  }, [user]);
 
   const fetchReports = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = getAccessToken();
       const response = await axios.get('/api/v1/quality/reports', {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -90,7 +73,7 @@ export default function QualityControl() {
 
   const fetchStandards = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = getAccessToken();
       const response = await axios.get('/api/v1/quality/standards', {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -130,7 +113,7 @@ export default function QualityControl() {
     formData.append('product_category', productCategory);
 
     try {
-      const token = localStorage.getItem('token');
+      const token = getAccessToken();
       const response = await axios.post('/api/v1/quality/grade', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
@@ -147,12 +130,6 @@ export default function QualityControl() {
     } finally {
       setIsAnalyzing(false);
     }
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    router.push('/');
   };
 
   if (loading) {
@@ -184,43 +161,22 @@ export default function QualityControl() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-blue-900 shadow-lg sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-2">
-              <span className="text-2xl">✅</span>
-              <h1 className="text-xl font-bold text-white">AgroNexus Quality</h1>
-              <span className="ml-2 text-xs bg-blue-700 text-blue-100 px-2 py-1 rounded">Processor</span>
-            </div>
-            <div className="flex items-center space-x-4">
-              <span className="text-white text-sm hidden md:block">Welcome, {user.name}</span>
-              <button
-                onClick={handleLogout}
-                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition text-sm font-medium"
-              >
-                Logout
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
+    <DashboardShell role="processor">
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div>
         {/* Page Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
           <div>
             <h2 className="text-2xl font-bold text-gray-900">✅ Quality Control AI</h2>
             <p className="text-gray-600">AI-powered product quality grading and certification</p>
           </div>
-          <button
-            onClick={() => router.push('/processor/dashboard')}
+          <Link
+            href={'/processor/dashboard'}
             className="mt-4 md:mt-0 text-blue-600 hover:text-blue-700 text-sm font-medium"
           >
             ← Back to Dashboard
-          </button>
+          </Link>
         </div>
 
         {/* Upload Form */}
@@ -427,7 +383,7 @@ export default function QualityControl() {
             </div>
           </div>
         )}
-      </main>
-    </div>
+      </div>
+    </DashboardShell>
   );
 }

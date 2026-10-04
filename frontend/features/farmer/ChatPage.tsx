@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
 import axios from 'axios';
+import { DashboardShell } from '@/components/DashboardShell';
+import { getAccessToken, useSession } from '@/features/auth/session';
 
 interface User {
   id: string;
@@ -30,8 +31,7 @@ interface Session {
 }
 
 export default function ChatAssistant() {
-  const router = useRouter();
-  const [user, setUser] = useState<User | null>(null);
+  const { user } = useSession();
   const [loading, setLoading] = useState(true);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -43,30 +43,12 @@ export default function ChatAssistant() {
   const [showSidebar, setShowSidebar] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    const userData = localStorage.getItem('user');
-    
-    if (!token || !userData) {
-      router.push('/auth/login');
-      return;
-    }
-    
-    try {
-      const parsed = JSON.parse(userData);
-      const role = (parsed.role || 'farmer').toLowerCase();
-      if (role !== 'farmer') {
-        router.push(`/${role}/dashboard`);
-        return;
-      }
-      setUser({ ...parsed, role });
-      setLanguage(parsed.language || 'en');
+    if (user?.role === 'farmer') {
+      setLanguage(user?.language || 'en');
       fetchSessions();
-    } catch (e) {
-      router.push('/auth/login');
-    } finally {
-      setLoading(false);
     }
-  }, [router]);
+    setLoading(false);
+  }, [user]);
 
   useEffect(() => {
     scrollToBottom();
@@ -78,7 +60,7 @@ export default function ChatAssistant() {
 
   const fetchSessions = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = getAccessToken();
       const response = await axios.get('/api/v1/chat/sessions', {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -97,7 +79,7 @@ export default function ChatAssistant() {
 
   const fetchMessages = async (sessionId: string) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = getAccessToken();
       const response = await axios.get(`/api/v1/chat/messages/${sessionId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -112,7 +94,7 @@ export default function ChatAssistant() {
 
   const createNewSession = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = getAccessToken();
       const response = await axios.post('/api/v1/chat/sessions', 
         { language },
         { headers: { Authorization: `Bearer ${token}` } }
@@ -146,7 +128,7 @@ export default function ChatAssistant() {
     setIsSending(true);
 
     try {
-      const token = localStorage.getItem('token');
+      const token = getAccessToken();
       const response = await axios.post('/api/v1/chat/messages', 
         {
           message: userMessage.content,
@@ -171,7 +153,7 @@ export default function ChatAssistant() {
 
   const deleteSession = async (sessionId: string) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = getAccessToken();
       await axios.delete(`/api/v1/chat/sessions/${sessionId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -198,12 +180,6 @@ export default function ChatAssistant() {
     setShowSidebar(false);
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    router.push('/');
-  };
-
   if (loading) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -218,39 +194,26 @@ export default function ChatAssistant() {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Header */}
-      <header className="bg-green-900 shadow-lg sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-2">
-              <button
-                onClick={() => setShowSidebar(!showSidebar)}
-                className="md:hidden text-white text-2xl hover:text-green-200 transition"
-              >
-                ☰
-              </button>
-              <span className="text-2xl">💬</span>
-              <h1 className="text-xl font-bold text-white">AgroNexus AI Assistant</h1>
-              <span className="ml-2 text-xs bg-green-700 text-green-100 px-2 py-1 rounded">Farmer</span>
-            </div>
-            <div className="flex items-center space-x-4">
-              <span className="text-white text-sm hidden md:block">Welcome, {user.name}</span>
-              <button
-                onClick={handleLogout}
-                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition text-sm font-medium"
-              >
-                Logout
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
+    <DashboardShell role="farmer">
+      {/* The shell owns the page header. This control stays: the chat-history
+          drawer has no other trigger once the header is gone. */}
+      <div className="md:hidden px-4 pt-3">
+        <button
+          type="button"
+          onClick={() => setShowSidebar(!showSidebar)}
+          aria-expanded={showSidebar}
+          aria-controls="chat-history-drawer"
+          className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700"
+        >
+          ☰ Sessions
+        </button>
+      </div>
 
       {/* Main Chat Area */}
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar */}
-        <div className={`
+        <div id="chat-history-drawer"
+          className={`
           fixed md:relative inset-y-0 left-0 z-40 w-72 bg-white shadow-lg 
           transform transition-transform duration-300 ease-in-out
           ${showSidebar ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
@@ -419,6 +382,6 @@ export default function ChatAssistant() {
           )}
         </div>
       </div>
-    </div>
+    </DashboardShell>
   );
 }

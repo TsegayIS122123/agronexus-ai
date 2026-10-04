@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import Link from 'next/link';
 import axios from 'axios';
+import { DashboardShell } from '@/components/DashboardShell';
+import { getAccessToken, useSession } from '@/features/auth/session';
 
 interface Equipment {
   id: string;
@@ -20,8 +21,7 @@ interface Equipment {
 }
 
 export default function EquipmentMarketplace() {
-  const router = useRouter();
-  const [user, setUser] = useState<any>(null);
+  const { user } = useSession();
   const [equipment, setEquipment] = useState<Equipment[]>([]);
   const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState<string[]>([]);
@@ -34,20 +34,15 @@ export default function EquipmentMarketplace() {
   });
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    const userData = localStorage.getItem('user');
-    if (!token || !userData) {
-      router.push('/auth/login');
-      return;
+    if (user?.role === 'processor') {
+      fetchEquipment();
+      fetchCategories();
     }
-    setUser(JSON.parse(userData));
-    fetchEquipment();
-    fetchCategories();
-  }, []);
+  }, [user]);
 
   const fetchEquipment = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = getAccessToken();
       const params = new URLSearchParams();
       if (filters.category) params.append('category', filters.category);
       if (filters.condition) params.append('condition', filters.condition);
@@ -71,7 +66,7 @@ export default function EquipmentMarketplace() {
 
   const fetchCategories = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = getAccessToken();
       const response = await axios.get('/api/v1/equipment/categories', {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -83,37 +78,11 @@ export default function EquipmentMarketplace() {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    router.push('/');
-  };
-
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-blue-900 shadow-lg sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-2">
-              <span className="text-2xl">🔧</span>
-              <h1 className="text-xl font-bold text-white">Equipment Marketplace</h1>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Link href="/processor/dashboard" className="text-white hover:text-gray-300 transition text-sm">
-                Dashboard
-              </Link>
-              <span className="text-white text-sm hidden md:block">Welcome, {user.name}</span>
-              <button onClick={handleLogout} className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition text-sm font-medium">
-                Logout
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <DashboardShell role="processor">
+      <div>
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
           <div>
             <h2 className="text-2xl font-bold text-gray-900">🔧 Equipment Marketplace</h2>
@@ -231,7 +200,7 @@ export default function EquipmentMarketplace() {
             ))}
           </div>
         )}
-      </main>
-    </div>
+      </div>
+    </DashboardShell>
   );
 }

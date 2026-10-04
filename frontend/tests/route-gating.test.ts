@@ -17,17 +17,13 @@
  * paths count as a dashboard, and which stay public.
  */
 
-/** First path segments that belong to the signed-in product. */
-const PRODUCT_SEGMENTS = new Set([
-  'about',
-  'contact',
-  'solutions',
-  'auth',
-  'marketplace',
-  'farmer',
-  'processor',
-  'consumer',
-]);
+/**
+ * First path segments behind the sign-in gate that render DashboardShell.
+ *
+ * Narrower than the product's top-level sections on purpose: about, contact,
+ * solutions, auth and marketplace are public and must keep the global header.
+ */
+const ROLE_SEGMENTS = new Set(['farmer', 'processor', 'consumer']);
 
 /**
  * Matches the path itself or a child of it. `startsWith(path)` on its own would
@@ -40,13 +36,15 @@ function matches(pathname: string, path: string): boolean {
 /**
  * True when the page supplies its own header, so the global one must be omitted.
  *
- * Matched on the second segment only, so `/farmer/disease` keeps the global chrome
- * until it grows a header of its own, while `/farmer/dashboard` does not.
+ * Matched on the first segment only: everything under a role prefix renders
+ * DashboardShell. This used to require a second segment of exactly `dashboard`,
+ * while the deeper role pages kept the global header on the grounds that they had
+ * none of their own. They do now, so that exemption would have put two bars on
+ * one screen again.
  */
 function isDashboardPath(pathname: string): boolean {
-  const [, first, second] = pathname.split('/');
-  if (!PRODUCT_SEGMENTS.has(first)) return false;
-  return second === 'dashboard';
+  const [, first] = pathname.split('/');
+  return ROLE_SEGMENTS.has(first);
 }
 
 /** Reachable by anyone, signed in or not. */
@@ -73,29 +71,37 @@ describe('dashboard detection', () => {
     },
   );
 
-  it('does not treat a bare role root as a dashboard, because there is no page behind it', () => {
-    expect(isDashboardPath('/farmer')).toBe(false);
-    expect(isDashboardPath('/processor')).toBe(false);
-    expect(isDashboardPath('/consumer')).toBe(false);
+  it.each([
+    '/farmer/disease',
+    '/farmer/prices',
+    '/farmer/chat',
+    '/processor/quality',
+    '/processor/equipment',
+    '/processor/feasibility',
+  ])('treats %s as owning its header too, now that it uses DashboardShell', (path) => {
+    expect(isDashboardPath(path)).toBe(true);
   });
 
-  it.each(['/farmer/disease', '/farmer/prices', '/processor/quality', '/consumer/dashboard/extra'])(
-    'leaves %s on the global chrome',
-    (path) => {
-      // `/consumer/dashboard/extra` is not a real route; if it ever appears it must
-      // not silently hide the chrome without a header of its own.
-      expect(isDashboardPath(path === '/consumer/dashboard/extra' ? '/farmer/disease' : path)).toBe(
-        false,
-      );
-    },
-  );
+  it('suppresses the header on a bare role root too, since the gate is prefix-based', () => {
+    // There is no page at `/farmer`, so nothing renders there. The gate cannot
+    // distinguish it without a route table, and erring towards hiding the header
+    // is the safer failure: it cannot produce two stacked bars.
+    expect(isDashboardPath('/farmer')).toBe(true);
+    expect(isDashboardPath('/processor')).toBe(true);
+    expect(isDashboardPath('/consumer')).toBe(true);
+  });
 
   it.each(['/', '/about', '/contact', '/solutions', '/auth/login', '/marketplace'])(
-    'keeps the global chrome on %s',
+    'leaves %s on the global chrome',
     (path) => {
       expect(isDashboardPath(path)).toBe(false);
     },
   );
+
+  it('does not suppress the header for a path that merely starts with a role name', () => {
+    expect(isDashboardPath('/farmers-market')).toBe(false);
+    expect(isDashboardPath('/processing-notes')).toBe(false);
+  });
 });
 
 describe('public path matching', () => {

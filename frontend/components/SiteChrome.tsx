@@ -9,45 +9,38 @@ import { Footer as GlobalFooter } from './Footer';
 /**
  * Decides whether the global header belongs on this page, and keeps the footer.
  *
- * The signed-in dashboards ship their own header: a dark, role-coloured bar with
- * the person's name and a logout button. Rendering the global header above it as
- * well produced two navigation bars stacked on top of each other, so the same
+ * Every signed-in page now renders its own header. The three dashboards and the
+ * six deeper role pages all use DashboardShell, which draws a dark, role-coloured
+ * bar with the person's name and a logout button. Rendering the global header
+ * above it produced two navigation bars stacked on top of each other, so the same
  * product name, the same "welcome back" line and two different logout controls
  * appeared on the same screen.
  *
- * The deeper signed-in pages (/farmer/disease, /processor/quality and the rest)
- * keep the global header for now. They have no header of their own yet, and each
- * will grow its own navigation and sidebar in a later phase. Until then, hiding
- * the global one would leave them with nothing at all.
- *
- * The distinction is structural rather than a matter of taste. Dashboard pages
- * are inside the root layout too, so without this gate every one of them gets
- * both headers. Each dashboard will grow its own navigation and sidebar in a
- * later phase, and this keeps that work from having to fight the global one.
+ * The deeper pages used to keep the global header because they had no header of
+ * their own. That is no longer true, so the exemption they relied on has been
+ * removed along with the headers it justified.
  *
  * Membership is decided by path prefix because this has to run in the root
- * layout, which is a server component and cannot read the router. The prefix is
- * matched segment by segment so `/marketplace` is public while
- * `/marketplace/orders` stays protected in its own right.
+ * layout, which is a server component and cannot read the router.
  */
-const PUBLIC_SEGMENTS = new Set([
-  'about',
-  'contact',
-  'solutions',
-  'auth',
-  'marketplace',
-  'farmer',
-  'processor',
-  'consumer',
-]);
+
+/**
+ * First path segments that are behind the sign-in gate and render DashboardShell.
+ *
+ * Deliberately narrower than the product's top-level sections. Adding `about` or
+ * `marketplace` here would strip the global header from pages that legitimately
+ * need it, which is the opposite of what this gate is for.
+ */
+const ROLE_SEGMENTS = new Set(['farmer', 'processor', 'consumer']);
 
 function isDashboardPath(pathname: string): boolean {
-  const [, first, second] = pathname.split('/');
+  const [, first] = pathname.split('/');
 
-  // A bare `/farmer` has no dashboard behind it, so nothing to suppress.
-  if (!PUBLIC_SEGMENTS.has(first)) return false;
-
-  return second === 'dashboard';
+  // Every route under a role prefix is behind the sign-in gate and now renders
+  // DashboardShell, so the global header is suppressed for all of them. Matching
+  // on the prefix rather than an exact segment keeps this from needing to be
+  // updated each time a role page is added.
+  return ROLE_SEGMENTS.has(first);
 }
 
 /**
