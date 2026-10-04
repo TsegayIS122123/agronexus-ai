@@ -65,9 +65,7 @@ describe('InternalTokenService', () => {
   it('refuses to mint without an acting user', async () => {
     const service = makeService({ INTERNAL_SERVICE_SECRET: INTERNAL_SECRET });
 
-    await expect(service.mint('')).rejects.toBeInstanceOf(
-      InternalServerErrorException,
-    );
+    await expect(service.mint('')).rejects.toBeInstanceOf(InternalServerErrorException);
   });
 
   it('expires in a minute, not a session lifetime', async () => {
