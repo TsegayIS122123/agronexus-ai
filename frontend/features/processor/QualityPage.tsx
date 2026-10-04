@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import { DashboardShell } from '@/components/DashboardShell';
 import Link from 'next/link';
@@ -295,22 +295,30 @@ export default function QualityControl() {
               <div className="bg-white rounded-lg shadow p-6">
                 <h4 className="font-semibold text-gray-700 mb-4">📊 Quality Metrics</h4>
                 <div className="space-y-3">
-                  {Object.entries(result.scores).map(([key, value]) => (
-                    <div key={key}>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600 capitalize">{key}</span>
-                        <span className={`font-medium ${value >= 70 ? 'text-green-600' : 'text-yellow-600'}`}>
-                          {value}%
-                        </span>
+                  {Object.entries(result.scores as Record<string, number>).map(
+                    ([key, value]) => (
+                      <div key={key}>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600 capitalize">{key}</span>
+                          <span
+                            className={`font-medium ${
+                              value >= 70 ? 'text-green-600' : 'text-yellow-600'
+                            }`}
+                          >
+                            {value}%
+                          </span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div
+                            className={`h-2 rounded-full ${
+                              value >= 70 ? 'bg-green-600' : 'bg-yellow-600'
+                            }`}
+                            style={{ width: `${value}%` }}
+                          />
+                        </div>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div
-                          className={`h-2 rounded-full ${value >= 70 ? 'bg-green-600' : 'bg-yellow-600'}`}
-                          style={{ width: `${value}%` }}
-                        />
-                      </div>
-                    </div>
-                  ))}
+                    ),
+                  )}
                 </div>
               </div>
 
