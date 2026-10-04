@@ -9,6 +9,7 @@ import { AppController } from './app.controller';
 import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { InternalModule } from './internal/internal.module';
+import { MarketplaceModule } from './marketplace/marketplace.module';
 import { UsersModule } from './users/users.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { SmsModule } from './notifications/sms.module';
@@ -50,6 +51,7 @@ import { SmsModule } from './notifications/sms.module';
     // Supplies the credential backend presents to ai-service. Additive: no
     // existing route uses it yet, so nothing about today's behaviour changes.
     InternalModule,
+    MarketplaceModule,
   ],
   controllers: [AppController],
   providers: [
