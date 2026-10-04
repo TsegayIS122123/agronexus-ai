@@ -148,7 +148,9 @@ describe('translation table', () => {
     };
 
     for (const locale of SUPPORTED_LOCALES) {
-      const keys = [...sectionFor(locale).matchAll(/^ {4}(\w+):/gm)].map((m) => m[1]);
+      const keys = Array.from(sectionFor(locale).matchAll(/^ {4}(\w+):/gm)).map(
+        (m) => m[1],
+      );
       const seen = new Set<string>();
       const duplicates = keys.filter(
         (key) => seen.has(key) || (seen.add(key), false),
