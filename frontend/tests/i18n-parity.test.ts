@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import { SUPPORTED_LOCALES, TRANSLATIONS } from '@/lib/i18n';
 import { AUTH_TRANSLATIONS } from '@/lib/i18n/auth';
 
@@ -64,5 +67,93 @@ describe('translation table', () => {
       }
     }
     expect(broken).toEqual([]);
+  });
+
+  /**
+   * The reverse direction.
+   *
+   * Every assertion above asks "does the locale have the key English has?". This
+   * asks the opposite: a key that exists only in a translation is dead weight
+   * at best and a rendering bug at worst. English is the reference table, so
+   * anything the reference lacks has no defined English text, and a component
+   * calling `t('price')` in English renders the key name itself.
+   *
+   * This was not hypothetical: thirteen marketplace keys (price, quantity,
+   * seller, product, placeOrder, myOrders, viewDetails, contactSeller,
+   * browseCatalog, searchProducts, noProductsFound, createListing,
+   * loadingProducts) were Amharic-only and the one-directional test passed.
+   */
+  it('has no locale-only keys that English lacks', () => {
+    const englishKeys = new Set(Object.keys(TRANSLATIONS.en));
+    const orphaned: string[] = [];
+
+    for (const locale of SUPPORTED_LOCALES) {
+      if (locale === 'en') continue;
+      for (const key of Object.keys(TRANSLATIONS[locale])) {
+        if (!englishKeys.has(key)) orphaned.push(`${locale}:${key}`);
+      }
+    }
+
+    expect(orphaned).toEqual([]);
+  });
+
+  /**
+   * U+FFFD REPLACEMENT CHARACTER.
+   *
+   * This is not a style rule. A replacement character is what a decoder emits
+   * when it has already lost the original bytes, so the string is not a
+   * translation with a typo in it — it is a corrupted string that renders as a
+   * black diamond in the middle of a sentence. One shipped this way already:
+   * the Amharic for "suppliers" was `��ስረጋዮች`, and every key-existence test
+   * passed because the key was present and non-blank.
+   *
+   * No automated check can tell you the words are *correct* Amharic. This at
+   * least fails on the class of damage that is mechanically detectable, which
+   * is a different and much weaker claim.
+   */
+  it('contains no Unicode replacement characters', () => {
+    const corrupted: string[] = [];
+
+    for (const locale of SUPPORTED_LOCALES) {
+      for (const [key, value] of Object.entries(TRANSLATIONS[locale])) {
+        if (value.includes('\uFFFD')) corrupted.push(`${locale}:${key}`);
+      }
+    }
+
+    expect(corrupted).toEqual([]);
+  });
+
+  /**
+   * Duplicate keys in a table literal.
+   *
+   * A duplicate does not throw. JavaScript keeps the last value and discards the
+   * first silently, so the translation you reviewed can be replaced by one you
+   * never saw while every runtime assertion still passes. This reads the source
+   * rather than the imported object, because the object has already lost the
+   * evidence by the time a test could inspect it.
+   */
+  it('declares no key twice in either table', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'lib/i18n/index.ts'),
+      'utf8',
+    );
+
+    const sectionFor = (locale: string): string => {
+      const start = source.indexOf(`  ${locale}: {`);
+      const end =
+        locale === 'en'
+          ? source.indexOf('  am: {')
+          : source.indexOf('const TRANSLATIONS');
+      return source.slice(start, end);
+    };
+
+    for (const locale of SUPPORTED_LOCALES) {
+      const keys = [...sectionFor(locale).matchAll(/^ {4}(\w+):/gm)].map((m) => m[1]);
+      const seen = new Set<string>();
+      const duplicates = keys.filter(
+        (key) => seen.has(key) || (seen.add(key), false),
+      );
+      expect({ locale, duplicates }).toEqual({ locale, duplicates: [] });
+    }
   });
 });
