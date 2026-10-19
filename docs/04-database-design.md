@@ -19,6 +19,21 @@
 2. **Every table has `id` (UUID), `created_at`, `updated_at`** unless stated otherwise.
 3. **Money is stored in integer minor units (cents of ETB)** — 1 ETB = 100 minor units. Floats
    are never used for money.
+   
+   > **Known deviation (2026-10-19).** The shipped schema predates this rule and stores the
+   > marketplace money columns as `Float`:
+   >
+   > - `marketplace_listings.price`
+   > - `marketplace_orders.unit_price`
+   > - `marketplace_orders.total_price`
+   > - `price_history.price`
+   >
+   > This is a real defect for financial arithmetic — floating-point drift over many orders.
+   > Converting the columns is tracked as a separate Alembic migration (add INTEGER
+   > `*_minor` column, backfill `CAST(price * 100 AS INTEGER)`, drop the old column, rename).
+   > The migration does not change any API contract if it uses the same field names with
+   > integer semantics; it is deliberately deferred until the frontend and AI service are
+   > updated in lockstep. The target design remains integer minor units.
 4. **Soft deletes** (`deleted_at`) for user and marketplace data.
 5. **Sensitive tokens are stored hashed** (SHA-256), never plaintext.
 6. **Redis holds only ephemeral data** (rate limits, OTPs, cache) — it can be wiped safely.
