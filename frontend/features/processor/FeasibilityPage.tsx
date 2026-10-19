@@ -1,10 +1,12 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from 'react';
-import axios from 'axios';
-import { DashboardShell } from '@/components/DashboardShell';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { getAccessToken, useSession } from '@/features/auth/session';
+
+import { useSession, getAccessToken } from '@/features/auth/session';
+import { useLocale } from '@/components/LocaleProvider';
+
+const AI_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:4000';
 
 interface Product {
   name: string;
@@ -12,408 +14,266 @@ interface Product {
   description: string;
   min_capital: number;
   max_capital: number;
-  min_quantity: number;
   avg_roi: number;
   payback_months: number;
-  image_url?: string;
-}
-
-interface FeasibilityResult {
-  product_name: string;
-  location: string;
-  capital: number;
-  quantity: number;
-  scores: {
-    feasibility_score: number;
-    financial_score: number;
-    market_score: number;
-    resource_score: number;
-    location_score: number;
-  };
-  financials: {
-    estimated_roi: number;
-    payback_period: number;
-    monthly_revenue: number;
-    monthly_cost: number;
-    monthly_profit: number;
-    annual_profit: number;
-  };
-  recommendations: string[];
-  risks: string[];
-  product_spec: {
-    name: string;
-    category: string;
-    description: string;
-    equipment: string[];
-    steps: string[];
-    avg_roi: number;
-    payback_months: number;
-  };
-  status: string;
 }
 
 export default function FactoryFeasibility() {
-  const { user } = useSession();
-  const [loading, setLoading] = useState(true);
+  useSession();
+  const { t } = useLocale();
   const [products, setProducts] = useState<Product[]>([]);
-  const [selectedProduct, setSelectedProduct] = useState<string>('');
-  const [location, setLocation] = useState<string>('');
-  const [capital, setCapital] = useState<number>(0);
-  const [quantity, setQuantity] = useState<number>(0);
-  const [result, setResult] = useState<FeasibilityResult | null>(null);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState('');
+  const [location, setLocation] = useState('Addis Ababa');
+  const [capital, setCapital] = useState(100000);
+  const [quantity, setQuantity] = useState(1000);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [reports, setReports] = useState<any[]>([]);
 
+  const authedFetch = useCallback(
+    async (url: string, init?: RequestInit) => {
+      const token = getAccessToken();
+      const res = await fetch(url, {
+        ...init,
+        headers: {
+          ...(init?.headers ?? {}),
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          'Content-Type': 'application/json',
+        },
+      });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body?.message ?? 'Request failed');
+      return body;
+    },
+    [],
+  );
+
+  const loadProducts = useCallback(async () => {
+    try {
+      const body = await authedFetch(`${AI_BASE}/api/v1/industry/products`);
+      const data = body.data ?? body;
+      setProducts(data);
+      if (data.length > 0 && !selectedProduct) {
+        setSelectedProduct(data[0].name);
+      }
+    } catch {
+      // silent
+    }
+  }, [authedFetch, selectedProduct]);
+
+  const loadReports = useCallback(async () => {
+    try {
+      const body = await authedFetch(`${AI_BASE}/api/v1/industry/reports`);
+      setReports(body.data ?? body ?? []);
+    } catch {
+      // silent
+    }
+  }, [authedFetch]);
+
   useEffect(() => {
-    if (user?.role === 'processor') {
-      fetchProducts();
-      fetchReports();
-    }
-    setLoading(false);
-  }, [user]);
-
-  const fetchProducts = async () => {
-    try {
-      const token = getAccessToken();
-      const response = await axios.get('/api/v1/industry/products', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      if (response.data.success) {
-        setProducts(response.data.data);
-        if (response.data.data.length > 0) {
-          setSelectedProduct(response.data.data[0].name);
-        }
-      }
-    } catch (err) {
-      console.error('Failed to fetch products:', err);
-    }
-  };
-
-  const fetchReports = async () => {
-    try {
-      const token = getAccessToken();
-      const response = await axios.get('/api/v1/industry/reports', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      if (response.data.success) {
-        setReports(response.data.data);
-      }
-    } catch (err) {
-      console.error('Failed to fetch reports:', err);
-    }
-  };
+    void loadProducts();
+    void loadReports();
+  }, [loadProducts, loadReports]);
 
   const handleAnalyze = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsAnalyzing(true);
+    setAnalyzing(true);
     setError(null);
     setResult(null);
-
     try {
-      const token = getAccessToken();
-      const response = await axios.post('/api/v1/industry/feasibility', {
-        product_name: selectedProduct,
-        location: location || 'Addis Ababa',
-        capital: capital,
-        quantity: quantity
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
+      const body = await authedFetch(`${AI_BASE}/api/v1/industry/feasibility`, {
+        method: 'POST',
+        body: JSON.stringify({
+          product_name: selectedProduct,
+          location,
+          capital,
+          quantity,
+        }),
       });
-      
-      if (response.data.success) {
-        setResult(response.data.data.feasibility);
-        fetchReports(); // Refresh reports list
-      }
-    } catch (err: any) {
-      setError(err.response?.data?.detail || 'Analysis failed. Please try again.');
+      setResult(body.data?.feasibility ?? body.data ?? body);
+      await loadReports();
+    } catch (err) {
+      setError((err as Error)?.message ?? 'Analysis failed');
     } finally {
-      setIsAnalyzing(false);
+      setAnalyzing(false);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-screen">
-        <div className="text-center">
-          <div className="text-4xl mb-4">🏭</div>
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!user) return null;
-
-  const getScoreColor = (score: number) => {
-    if (score >= 80) return 'text-green-600';
-    if (score >= 60) return 'text-yellow-600';
-    return 'text-red-600';
-  };
-
-  const getScoreLabel = (score: number) => {
-    if (score >= 80) return 'High Feasibility';
-    if (score >= 60) return 'Medium Feasibility';
-    return 'Low Feasibility';
-  };
-
   return (
-    <DashboardShell role="processor">
+    <div className="py-8">
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-gray-900">🏗️ {t('navFactoryAdvisor')}</h1>
+        <p className="text-gray-600">{t('kpiFactoryAdvisorDesc')}</p>
+      </div>
 
-      {/* Main Content */}
-      <div>
-        {/* Page Header */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
+      <div className="bg-white rounded-lg shadow p-6 mb-8">
+        <form onSubmit={handleAnalyze} className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">🏗️ Factory Feasibility Advisor</h2>
-            <p className="text-gray-600">Assess if you can process local crops into finished products</p>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {t('product')}
+            </label>
+            <select
+              value={selectedProduct}
+              onChange={(e) => setSelectedProduct(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+            >
+              {products.map((p) => (
+                <option key={p.name} value={p.name}>
+                  {p.name} (ROI: {p.avg_roi}%)
+                </option>
+              ))}
+            </select>
           </div>
-          <Link
-            href={'/processor/dashboard'}
-            className="mt-4 md:mt-0 text-blue-600 hover:text-blue-700 text-sm font-medium"
-          >
-            ← Back to Dashboard
-          </Link>
-        </div>
-
-        {/* Analysis Form */}
-        <div className="bg-white rounded-lg shadow p-6 mb-8">
-          <form onSubmit={handleAnalyze} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Product to Process</label>
-              <select
-                value={selectedProduct}
-                onChange={(e) => setSelectedProduct(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                disabled={isAnalyzing}
-              >
-                {products.map((p) => (
-                  <option key={p.name} value={p.name}>
-                    {p.name} (ROI: {p.avg_roi}%, Min: {p.min_capital.toLocaleString()} ETB)
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-              <input
-                type="text"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                placeholder="e.g., Addis Ababa"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                disabled={isAnalyzing}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Capital Investment (ETB)
-              </label>
-              <input
-                type="number"
-                value={capital || ''}
-                onChange={(e) => setCapital(Number(e.target.value))}
-                placeholder="e.g., 100000"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                required
-                disabled={isAnalyzing}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Available Raw Material (kg/month)
-              </label>
-              <input
-                type="number"
-                value={quantity || ''}
-                onChange={(e) => setQuantity(Number(e.target.value))}
-                placeholder="e.g., 1000"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                required
-                disabled={isAnalyzing}
-              />
-            </div>
-
-            <div className="md:col-span-2">
-              <button
-                type="submit"
-                disabled={isAnalyzing}
-                className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition disabled:opacity-50 text-lg font-medium"
-              >
-                {isAnalyzing ? 'Analyzing...' : '🔍 Analyze Feasibility'}
-              </button>
-            </div>
-          </form>
-        </div>
-
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-600 p-4 rounded-lg mb-8">
-            {error}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Location
+            </label>
+            <input
+              type="text"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+            />
           </div>
-        )}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Capital (ETB)
+            </label>
+            <input
+              type="number"
+              required
+              min="1"
+              value={capital}
+              onChange={(e) => setCapital(Number(e.target.value))}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Raw material (kg/month)
+            </label>
+            <input
+              type="number"
+              required
+              min="1"
+              value={quantity}
+              onChange={(e) => setQuantity(Number(e.target.value))}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+            />
+          </div>
+          <div className="md:col-span-2">
+            <button
+              type="submit"
+              disabled={analyzing || !selectedProduct}
+              className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 disabled:opacity-50 font-medium"
+            >
+              {analyzing ? t('loading') : 'Analyze Feasibility'}
+            </button>
+          </div>
+        </form>
+      </div>
 
-        {/* Results */}
-        {result && (
-          <div className="space-y-6">
-            {/* Score Summary */}
-            <div className="bg-white rounded-lg shadow p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Feasibility Summary</h3>
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                <div className="text-center p-3 bg-gray-50 rounded-lg">
-                  <div className={`text-2xl font-bold ${getScoreColor(result.scores.feasibility_score)}`}>
-                    {result.scores.feasibility_score}%
-                  </div>
-                  <div className="text-sm text-gray-500">Overall</div>
-                  <div className="text-xs font-medium text-gray-600">{getScoreLabel(result.scores.feasibility_score)}</div>
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg mb-6">
+          {error}
+        </div>
+      )}
+
+      {result && (
+        <div className="space-y-6">
+          <div className="bg-white rounded-lg shadow p-6">
+            <h3 className="text-lg font-semibold mb-4">Feasibility Summary</h3>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              <div className="text-center p-3 bg-gray-50 rounded-lg">
+                <div className="text-2xl font-bold text-blue-600">
+                  {result.scores?.feasibility_score ?? result.scores?.feasibilityScore ?? '—'}%
                 </div>
-                <div className="text-center p-3 bg-gray-50 rounded-lg">
-                  <div className="text-2xl font-bold text-blue-600">{result.scores.financial_score}%</div>
-                  <div className="text-sm text-gray-500">Financial</div>
+                <div className="text-sm text-gray-500">Overall</div>
+              </div>
+              <div className="text-center p-3 bg-gray-50 rounded-lg">
+                <div className="text-2xl font-bold text-blue-600">
+                  {result.scores?.financial_score ?? result.scores?.financialScore ?? '—'}%
                 </div>
-                <div className="text-center p-3 bg-gray-50 rounded-lg">
-                  <div className="text-2xl font-bold text-green-600">{result.scores.market_score}%</div>
-                  <div className="text-sm text-gray-500">Market</div>
+                <div className="text-sm text-gray-500">Financial</div>
+              </div>
+              <div className="text-center p-3 bg-gray-50 rounded-lg">
+                <div className="text-2xl font-bold text-green-600">
+                  {result.scores?.market_score ?? result.scores?.marketScore ?? '—'}%
                 </div>
-                <div className="text-center p-3 bg-gray-50 rounded-lg">
-                  <div className="text-2xl font-bold text-yellow-600">{result.scores.resource_score}%</div>
-                  <div className="text-sm text-gray-500">Resources</div>
+                <div className="text-sm text-gray-500">Market</div>
+              </div>
+              <div className="text-center p-3 bg-gray-50 rounded-lg">
+                <div className="text-2xl font-bold text-yellow-600">
+                  {result.scores?.resource_score ?? result.scores?.resourceScore ?? '—'}%
                 </div>
-                <div className="text-center p-3 bg-gray-50 rounded-lg">
-                  <div className="text-2xl font-bold text-purple-600">{result.scores.location_score}%</div>
-                  <div className="text-sm text-gray-500">Location</div>
+                <div className="text-sm text-gray-500">Resources</div>
+              </div>
+              <div className="text-center p-3 bg-gray-50 rounded-lg">
+                <div className="text-2xl font-bold text-purple-600">
+                  {result.scores?.location_score ?? result.scores?.locationScore ?? '—'}%
                 </div>
+                <div className="text-sm text-gray-500">Location</div>
               </div>
             </div>
+          </div>
 
-            {/* Financial Projections */}
+          {result.financials && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="bg-white rounded-lg shadow p-6">
                 <p className="text-sm text-gray-500">Estimated ROI</p>
-                <p className="text-2xl font-bold text-green-600">{result.financials.estimated_roi}%</p>
-                <p className="text-xs text-gray-400">Annual return on investment</p>
+                <p className="text-2xl font-bold text-green-600">
+                  {result.financials.estimated_roi ?? result.financials.estimatedRoi}%
+                </p>
               </div>
               <div className="bg-white rounded-lg shadow p-6">
                 <p className="text-sm text-gray-500">Payback Period</p>
-                <p className="text-2xl font-bold text-blue-600">{result.financials.payback_period} months</p>
-                <p className="text-xs text-gray-400">Time to recover investment</p>
+                <p className="text-2xl font-bold text-blue-600">
+                  {result.financials.payback_period ?? result.financials.paybackPeriod} months
+                </p>
               </div>
               <div className="bg-white rounded-lg shadow p-6">
                 <p className="text-sm text-gray-500">Monthly Profit</p>
-                <p className="text-2xl font-bold text-green-600">{result.financials.monthly_profit.toFixed(0)} ETB</p>
-                <p className="text-xs text-gray-400">After all costs</p>
+                <p className="text-2xl font-bold text-green-600">
+                  {result.financials.monthly_profit ?? result.financials.monthlyProfit} ETB
+                </p>
               </div>
             </div>
+          )}
 
-            {/* Product Details */}
-            <div className="bg-white rounded-lg shadow p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">📋 Product Details</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-gray-500">Product</p>
-                  <p className="font-medium">{result.product_spec.name}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Category</p>
-                  <p className="font-medium">{result.product_spec.category}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Equipment Needed</p>
-                  <ul className="list-disc list-inside text-sm text-gray-600">
-                    {result.product_spec.equipment.slice(0, 3).map((item, i) => (
-                      <li key={i}>{item}</li>
-                    ))}
-                  </ul>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Processing Steps</p>
-                  <ul className="list-disc list-inside text-sm text-gray-600">
-                    {result.product_spec.steps.slice(0, 3).map((step, i) => (
-                      <li key={i}>{step}</li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            </div>
-
-            {/* Recommendations & Risks */}
+          {result.recommendations && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="bg-green-50 border border-green-200 rounded-lg p-6">
                 <h4 className="font-semibold text-green-700 mb-2">✅ Recommendations</h4>
                 <ul className="list-disc list-inside text-sm text-green-600 space-y-1">
-                  {result.recommendations.map((rec, i) => (
-                    <li key={i}>{rec}</li>
+                  {result.recommendations.map((r: string, i: number) => (
+                    <li key={i}>{r}</li>
                   ))}
                 </ul>
               </div>
-              <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-                <h4 className="font-semibold text-red-700 mb-2">⚠️ Risks</h4>
-                <ul className="list-disc list-inside text-sm text-red-600 space-y-1">
-                  {result.risks.map((risk, i) => (
-                    <li key={i}>{risk}</li>
-                  ))}
-                </ul>
-              </div>
+              {result.risks && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+                  <h4 className="font-semibold text-red-700 mb-2">⚠️ Risks</h4>
+                  <ul className="list-disc list-inside text-sm text-red-600 space-y-1">
+                    {result.risks.map((r: string, i: number) => (
+                      <li key={i}>{r}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
+          )}
+        </div>
+      )}
 
-            {result.status === 'review' && (
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-yellow-700">
-                <p className="font-medium">📋 Under Review</p>
-                <p className="text-sm">This feasibility report requires additional review before approval.</p>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* History */}
-        {reports.length > 0 && (
-          <div className="mt-8 bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">📊 Your Feasibility Reports</h3>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-4 py-2 text-left text-gray-600">Product</th>
-                    <th className="px-4 py-2 text-left text-gray-600">Score</th>
-                    <th className="px-4 py-2 text-left text-gray-600">ROI</th>
-                    <th className="px-4 py-2 text-left text-gray-600">Payback</th>
-                    <th className="px-4 py-2 text-left text-gray-600">Status</th>
-                    <th className="px-4 py-2 text-left text-gray-600">Date</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {reports.map((r) => (
-                    <tr key={r.id} className="border-t border-gray-100 hover:bg-gray-50">
-                      <td className="px-4 py-2 font-medium">{r.product_type}</td>
-                      <td className="px-4 py-2">
-                        <span className={`font-medium ${r.feasibility_score >= 70 ? 'text-green-600' : 'text-yellow-600'}`}>
-                          {r.feasibility_score}%
-                        </span>
-                      </td>
-                      <td className="px-4 py-2">{r.estimated_roi}%</td>
-                      <td className="px-4 py-2">{r.payback_period} months</td>
-                      <td className="px-4 py-2">
-                        <span className={`px-2 py-1 rounded-full text-xs ${
-                          r.status === 'approved' ? 'bg-green-100 text-green-700' :
-                          r.status === 'review' ? 'bg-yellow-100 text-yellow-700' :
-                          'bg-gray-100 text-gray-700'
-                        }`}>
-                          {r.status}
-                        </span>
-                      </td>
-                      <td className="px-4 py-2 text-gray-500">{new Date(r.created_at).toLocaleDateString()}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
+      <div className="mt-8">
+        <Link
+          href="/processor/dashboard"
+          className="text-blue-600 hover:text-blue-700"
+        >
+          ← {t('backToDashboard')}
+        </Link>
       </div>
-    </DashboardShell>
+    </div>
   );
 }
