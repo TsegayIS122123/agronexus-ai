@@ -8,8 +8,7 @@ settings = get_settings()
 
 from app.routes import (
     auth, disease, prices, chat, industry, quality,
-    equipment, cost_calculator, energy, marketplace,
-    weather, cooperative, price_comparison
+    equipment, cost_calculator, energy, weather, cooperative, price_comparison
 )
 app = FastAPI(
     title="AgroNexus AI API",
@@ -36,7 +35,6 @@ app.include_router(quality.router)
 app.include_router(equipment.router)
 app.include_router(cost_calculator.router)
 app.include_router(energy.router)
-app.include_router(marketplace.router)
 app.include_router(weather.router)          
 app.include_router(cooperative.router)       
 app.include_router(price_comparison.router)  
