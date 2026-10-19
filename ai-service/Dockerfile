@@ -1,32 +1,61 @@
-FROM python:3.11-slim
+# Multi-stage build. The first stage installs dependencies (and torch, from
+# the PyTorch CPU index so it does not pull several gigabytes of CUDA
+# packages this CPU-only prototype never uses). The second stage copies the
+# wheel cache and app code into a slimmer runtime image.
+FROM python:3.11-slim AS builder
 
-WORKDIR /app
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=0 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
 
-# Install system dependencies for psycopg2
-RUN apt-get update && apt-get install -y \
-    gcc \
-    libpq-dev \
+WORKDIR /build
+
+# Build tools for any package that needs them (psycopg2, cffi).
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        build-essential \
+        libpq-dev \
+        git \
     && rm -rf /var/lib/apt/lists/*
 
-# The image pulls large wheels (torch ~200 MB). On a slow/flaky connection the
-# default 15s read timeout aborts mid-download, so allow long stalls and retry.
-ENV PIP_DEFAULT_TIMEOUT=300 \
-    PIP_RETRIES=10
+# Install torch from the CPU-only index FIRST so the rest of the requirements
+# file finds it satisfied rather than resolving to a CUDA wheel.
+RUN pip install --prefix=/install \
+      --index-url https://download.pytorch.org/whl/cpu \
+      torch
 
-COPY requirements.txt .
+COPY requirements.txt /build/requirements.txt
+RUN pip install --prefix=/install -r /build/requirements.txt
 
-# Install CPU-only PyTorch first. ultralytics depends on torch, and on Linux a
-# plain `pip install torch` pulls the full CUDA/cuDNN stack (cuda-toolkit,
-# nvidia-*, triton - several GB) that this prototype does not need. Installing
-# the CPU wheels up front keeps the image small and the build fast; ultralytics
-# still works for CPU inference. requirements.txt then sees torch already
-# satisfied and does not reinstall the CUDA build.
-RUN pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cpu \
-    torch torchvision
+# ---------------------------------------------------------------------------
 
-RUN pip install --no-cache-dir -r requirements.txt
+FROM python:3.11-slim AS runtime
 
-COPY . .
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
 
-# Use --reload with watchfiles support
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+# Runtime library for psycopg2.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        libpq5 \
+        curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Non-root user. Files in /app are owned by this user so nothing runs as root.
+RUN groupadd --system --gid 1001 app \
+    && useradd --system --uid 1001 --gid app --create-home app
+
+COPY --from=builder /install /usr/local
+WORKDIR /app
+COPY --chown=app:app . /app
+
+USER app
+
+# /health returns the FastAPI health document. Docker's healthcheck uses it
+# so dependent services (backend) wait for readiness, not just startup.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
+    CMD curl -fsS http://localhost:8000/health || exit 1
+
+EXPOSE 8000
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
