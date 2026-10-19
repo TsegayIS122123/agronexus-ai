@@ -8,12 +8,6 @@ const aiServiceUrl =
 
 const nextConfig = {
   transpilePackages: ['axios'],
-  async rewrites() {
-    return [
-      {
-        source: '/api/v1/:path*',
-        destination: `${aiServiceUrl}/api/v1/:path*`,
-      },
     ];
   },
 };

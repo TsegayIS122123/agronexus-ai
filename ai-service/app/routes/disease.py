@@ -4,7 +4,7 @@ from typing import Optional
 import uuid
 from app.database import get_db
 from app.services import disease_service
-from app.services.role_guard import require_role
+from app.services.internal_guard import require_internal_role
 from app.models.user import User
 
 router = APIRouter(prefix="/api/v1/disease", tags=["Disease Detection"])
@@ -12,7 +12,7 @@ router = APIRouter(prefix="/api/v1/disease", tags=["Disease Detection"])
 @router.post("/detect")
 async def detect_disease(
     file: UploadFile = File(...),
-    user: User = Depends(require_role(["farmer", "processor"])),
+    user: User = Depends(require_internal_role(["farmer", "processor"])),
     crop_type: str = Form(...),
     language: str = Form("am"),
     db: Session = Depends(get_db)
@@ -45,7 +45,7 @@ async def detect_disease(
 @router.get("/history/{farmer_id}")
 def get_history(
     farmer_id: str,
-    user: User = Depends(require_role(["farmer", "processor"])),
+    user: User = Depends(require_internal_role(["farmer", "processor"])),
     db: Session = Depends(get_db)
 ):
     """Get disease detection history - Users can only see their own"""
