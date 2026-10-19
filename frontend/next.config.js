@@ -1,15 +1,10 @@
 /** @type {import('next').NextConfig} */
-
-// The FastAPI service is reached through a server-side rewrite, never directly
-// from the browser. Set AI_SERVICE_URL when the API is not on the host machine
-// (for example the `ai-service` hostname when running under Docker Compose).
-const aiServiceUrl =
-  process.env.AI_SERVICE_URL || 'http://localhost:8000';
-
 const nextConfig = {
+  // axios is still imported by the six AI pages (disease, prices, chat,
+  // quality, equipment, feasibility) until they are migrated to the shared
+  // api-client. transpilePackages keeps Next's compiler happy with it in the
+  // meantime; removing this line breaks the build for those pages.
   transpilePackages: ['axios'],
-    ];
-  },
 };
 
 module.exports = nextConfig;
