@@ -143,16 +143,33 @@ def test_dependency_rejects_a_missing_token(monkeypatch):
 def test_dependency_never_reads_the_cookie():
     """A cookie must not be an alternate route into an internal-only dependency.
 
-    The signature has no ``request.cookies`` access at all; this asserts that
-    stays true rather than relying on it by inspection.
+    The dependency reads the token from its header parameter only, so a browser
+    cannot reach an internal-only route by presenting a cookie, and the two
+    mechanisms stay independent. This checks the AST, not the raw source, so the
+    docstring's own mention of ``request.cookies`` does not count as a hit.
     """
+    import ast
     import inspect
 
-    from app.services import internal_guard
+    from app.services import internal_guard, role_guard
 
     source = inspect.getsource(internal_guard)
-    assert "request.cookies" not in source
-    assert "cookies.get" not in source
+    tree = ast.parse(source)
+
+    # Every attribute access like ``request.cookies`` is an ast.Attribute whose
+    # ``attr`` is "cookies". Docstrings and comments are not AST nodes, so they
+    # are excluded by construction; type annotations that merely name ``Request``
+    # are not attribute accesses and do not count either.
+    hits = [
+        node.lineno
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Attribute) and node.attr == "cookies"
+    ]
+    assert hits == [], f"internal_guard must never access .cookies, found at {hits}"
+
+    # The same principle from the other side: nobody may add an internal-header
+    # path to the cookie guard and pass the AST check above.
+    assert "X-Internal-Service-Token" not in inspect.getsource(role_guard)
 
 
 def test_role_guard_cookie_path_is_untouched():
