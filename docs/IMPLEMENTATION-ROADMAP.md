@@ -23,12 +23,13 @@ run and their output captured. No phase is marked done on reasoning alone.
 
 | Area | Reality today |
 |---|---|
+> **Stale as of 2026-10-19 — see "Current reality — verified 2026-10-19" at the end of this file.** The table below was written when `backend/` was an empty skeleton and is kept only as a record of where the work started. The counts in it are no longer true.
+
 | `frontend/` | Next.js 14 App Router. 24 routes build clean. Root layout already has `Header`, `Footer`, `SkipLink`, `AuthProvider`, `LocaleProvider`. Design tokens now resolve correctly. |
-| `backend/` | **Bare NestJS skeleton.** `src/` contains only `app.module.ts`, `app.controller.ts`, `main.ts`. No modules, no ORM, no auth, no `lint`/`test` scripts. Deps are Nest core only. |
+| `backend/` | ~~**Bare NestJS skeleton.**~~ **Now a real service** — auth, users, internal, notifications, sms, marketplace modules (see verified section). |
 | `ai-service/` | FastAPI holding **all** current business logic: 13 routers (auth, chat, disease, prices, weather, marketplace, cooperative, quality, equipment, industry, energy, cost calculator, price comparison). |
-| Database | 15 tables via a single Alembic revision `f6d50714db20`. |
+| Database | ~~15 tables via a single Alembic revision `f6d50714db20`.~~ **20 tables via two revisions** (`f6d50714db20` = 16, `a1b2c3d4e5f6` = 4). |
 | Auth today | Only `POST /api/v1/auth/register` and `POST /api/v1/auth/login`. |
-| **Auth gaps** | `users.is_verified` exists but **nothing ever sets it**. There is **no** email-verification, password-reset, OTP, or refresh-token flow, and **no** table for any of them. No SMS integration at all. |
 | API surface | 47 paths / 51 HTTP operations, all under `/api/v1/*`. Note routers are mounted as `_IncludedRouter` objects, so `app.routes` reports only 19 entries and naive route counting under-reports; use `app.openapi()["paths"]` instead. |
 
 Because `backend/` is empty while `ai-service/` owns everything, the identity work
@@ -45,9 +46,9 @@ pointed at it before AI features grow any further.
 | 2 | Backend Identity Core | Backend + DB | **Done** |
 | 3 | Frontend Auth UI | Frontend | **Done** |
 | 4 | Auth Integration | Full stack | **Done**, browser pass outstanding |
-| 5 | API Migration | Backend | Not started |
-| 6 | Service Coupling Cleanup | Full stack | Not started |
-| 7 | Data Layer Completion | Database | Partly done: schema and 21 tables exist; money columns are `Float` |
+| 5 | API Migration | Backend | **Started**: marketplace moved to NestJS (`3234ca1`, `002887f`); not yet reachable from the browser because the frontend still calls the FastAPI copy. |
+| 6 | Service Coupling Cleanup | Full stack | Not started; the `backend→ai-service` credential exists but no route uses it |
+| 7 | Data Layer Completion | Database | Partly done: **20** tables, not 21; money columns are `Float`, not integer minor units |
 | 8 | AI Services | AI | Prototype only: inference path real, no evaluation, no retrieval |
 | 9 | Security Hardening | Full stack | Partly done: registration and order authorization fixed; refresh cookie not `httpOnly` |
 | 10 | Deployment | Infra | Not started; `ai-service` image does not build on a slow link |
@@ -605,3 +606,224 @@ and the NestJS service are cheap to containerise.
 - Verification and OTP codes are printed to the console in development by
   `tools/dev-print-code.mjs`, which refuses to run outside localhost or under
   `NODE_ENV=production`. No email or SMS provider is wired up.
+
+---
+
+## Current reality — verified 2026-10-19
+
+This section is the result of a read-only audit of the repository on
+2026-10-19, against commits `3234ca1` (HEAD at audit time) and the working tree.
+Every claim below names a file and line. Nothing here is inferred from the phase
+ticks above; where the two disagree, this section is the one that was checked.
+
+### A. Business-logic ownership — which service actually serves each domain
+
+The frontend's only browser-side route to any `/api/v1/*` call is the Next.js
+rewrite in `frontend/next.config.js:11-18`, which proxies **`/api/v1/:path*` to
+`AI_SERVICE_URL` (default `http://localhost:8000`, i.e. FastAPI)**. The one
+exception is auth: `frontend/features/auth/api.ts:19-20` pins
+`AUTH_BASE_URL = http://localhost:4000` (NestJS) and every auth call passes it
+explicitly. So in the browser today:
+
+| Domain | Path prefix | Served by (in the browser) | NestJS equivalent | Reality |
+|---|---|---|---|---|
+| Identity / auth | `/api/v1/auth/*` | **NestJS :4000** (absolute URL) | is the owner | Real, tested, works |
+| Marketplace | `/api/v1/marketplace/*` | **FastAPI :8000** (via rewrite) | `backend/src/marketplace/*` | **Two implementations of the same contract against the same tables.** The NestJS copy is unreachable from the browser. |
+| Disease | `/api/v1/disease/*` | FastAPI :8000 | none | FastAPI only |
+| Prices | `/api/v1/prices/*` | FastAPI :8000 | none | FastAPI only |
+| Chat | `/api/v1/chat/*` | FastAPI :8000 | none | FastAPI only |
+| Quality | `/api/v1/quality/*` | FastAPI :8000 | none | FastAPI only |
+| Industry / feasibility | `/api/v1/industry/*` | FastAPI :8000 | none | FastAPI only |
+| Equipment | `/api/v1/equipment/*` | FastAPI :8000 | none | FastAPI only |
+| Weather, cooperative, cost-calculator, price-comparison, energy | `/api/v1/*` | FastAPI :8000 | none | FastAPI only; **no frontend page calls these yet** |
+| Internal hop | n/a | `backend/src/internal/ai-service.client.ts` | built | **Wired to nothing** — see C3 |
+
+`backend/src/internal/ai-service.client.ts` exists and `InternalModule` is
+registered in `backend/src/app.module.ts:53`, but a grep for `AiServiceClient`
+across `backend/src` finds **only its own definition and the module wiring** — no
+caller. The credential bridge from commit `30b1e06` is scaffolding, not a used
+path.
+
+### B. Page-by-page reality (frontend)
+
+Status vocabulary: **IMPLEMENTED** (talks to a real endpoint that answers),
+**PARTIAL** (real UI, data path broken), **PLACEHOLDER** (no backend call),
+**BROKEN** (cannot render or always redirects), **EMPTY** (renders nothing).
+
+| Route | Component | Status | Evidence |
+|---|---|---|---|
+| `/` | `frontend/app/page.tsx` | **IMPLEMENTED** | Static marketing + i18n, links to `/auth/register?role=…` |
+| `/auth/login` … `/auth/reset-password` (6) | `features/auth/*Page.tsx` | **IMPLEMENTED** | Post to NestJS via `features/auth/api.ts`, session in `features/auth/session.ts` |
+| `/farmer/dashboard` | `features/farmer/DashboardPage.tsx` | **IMPLEMENTED** | `useSession`; KPI cards are static labels (no fabricated numbers) |
+| `/processor/dashboard` | `features/processor/DashboardPage.tsx` | **IMPLEMENTED** | Same pattern; two tiles are non-link "Coming soon" |
+| `/consumer/dashboard` | `features/consumer/DashboardPage.tsx` | **IMPLEMENTED** | Same pattern |
+| `/farmer/disease` | `features/farmer/DiseasePage.tsx` | **BROKEN** | Calls `axios.post('/api/disease/detect')` (`:139`) and `/api/disease/history/…` (`:36`) — **no `/v1`**, so the rewrite never matches and the request 404s on the Next origin |
+| `/farmer/prices` | `features/farmer/PricesPage.tsx` | **PARTIAL** | Calls `/api/v1/prices/*` (`:74,77,111,114`) → reaches FastAPI → **401** (see C2) |
+| `/farmer/chat` | `features/farmer/ChatPage.tsx` | **PARTIAL** | Calls `/api/v1/chat/*` (`:64,83,98,132,157`) → FastAPI → **401** |
+| `/processor/quality` | `features/processor/QualityPage.tsx` | **PARTIAL** | `/api/v1/quality/*` (`:63,77,117`) → FastAPI → **401** |
+| `/processor/feasibility` | `features/processor/FeasibilityPage.tsx` | **PARTIAL** | `/api/v1/industry/*` (`:79,117`) → FastAPI → **401** |
+| `/processor/equipment` | `features/processor/EquipmentPage.tsx` | **PARTIAL** | `/api/v1/equipment/*` (`:53`) → FastAPI → **401** |
+| `/farmer/profile`, `/processor/profile`, `/consumer/profile` | `features/account/ProfilePage.tsx` | **IMPLEMENTED** | Read-only, states why (`:64-71`); no edit endpoint exists |
+| `/marketplace` | `features/marketplace/MarketplacePage.tsx` | **BROKEN** | Gates on `localStorage.getItem('token'\|'user')` (`:27-33`); nothing ever writes those keys → always `router.push('/auth/login')` |
+| `/marketplace/listings/[id]` | `features/marketplace/ListingDetailPage.tsx` | **BROKEN** | Same gate (`:39-44`); also expects `response.data.success` (`:56`) and posts `listing_id` (`:75`) |
+| `/marketplace/listings/new` | `features/marketplace/NewListingPage.tsx` | **BROKEN** | Same gate (`:27-32`); posts snake_case form (`:12-24`) and expects `response.data.success` (`:47`) |
+| `/marketplace/orders` | `features/marketplace/OrdersPage.tsx` | **BROKEN** | Same gate (`:28-33`) |
+
+The four marketplace pages are `"use client"` components with an **inline purple
+header** (`MarketplacePage.tsx:114`, `NewListingPage.tsx:67`) rather than
+`DashboardShell`, which is the same "one header per page" problem Phase 4 lists
+as outstanding — but for marketplace the pages never render at all, so the
+header question is moot until the gate is removed.
+
+### C. Defects found (each verified, each currently live)
+
+1. **The marketplace auth gate reads keys nothing writes.**
+   `MarketplacePage.tsx:27`, `NewListingPage.tsx:27`, `ListingDetailPage.tsx:39`,
+   `OrdersPage.tsx:28` all branch on `localStorage.getItem('token')`. A grep for
+   `localStorage.setItem` across `frontend` finds **no writer** for `token` or
+   `user` — `features/auth/session.ts:5-8` explicitly holds the access token in a
+   module variable. Result: `/marketplace` and its children are unreachable for
+   everyone, signed in or not.
+
+2. **Every AI page sends a bearer token to a service that only reads a cookie.**
+   `ai-service/app/services/role_guard.py:11` reads
+   `request.cookies.get("access_token")`. FastAPI's own login sets that cookie
+   (`ai-service/app/routes/auth.py`), but the browser never calls FastAPI's login
+   — it signs in at NestJS. So `Authorization: Bearer …` from `ChatPage`,
+   `PricesPage`, `QualityPage`, `FeasibilityPage`, `EquipmentPage` is ignored and
+   each call answers `401 Not authenticated`. The `backend→ai-service` internal
+   token path that would fix this is unused (C3).
+
+3. **The internal-service credential is built but wired to nothing.**
+   `InternalTokenService` + `AiServiceClient` are providers/exports in
+   `backend/src/internal/internal.module.ts:20-21`, and the module is imported in
+   `app.module.ts:53`, but no controller or service injects `AiServiceClient`.
+   Symmetrically, `ai-service/app/services/internal_guard.py:102`
+   (`require_internal_role`) is never imported by any router. Both halves exist;
+   neither is called. Commit `30b1e06` delivered the plumbing, not a consumer.
+
+4. **Marketplace is implemented twice, with two different response shapes.**
+   FastAPI `ai-service/app/routes/marketplace.py:44-321` returns
+   `{success, data}`; NestJS `backend/src/marketplace/marketplace.controller.ts`
+   returns plain objects (its own header comment at `:11-19` calls this
+   deliberate). The frontend was written against the `{success, data}` shape
+   (`MarketplacePage.tsx:66`, `ListingDetailPage.tsx:56`) — i.e. against the
+   FastAPI copy. Both copies map the same three tables
+   (`ai-service/app/models/marketplace.py:24,63,94` /
+   `backend/src/marketplace/*.entity.ts`). This is the clearest "two backends
+   claim one domain" case in the repo, and it is the exact hazard
+   `docs/09-platform-decision-rule.md` §6 warns against.
+
+5. **The NestJS marketplace DTOs reject the frontend's payloads.**
+   `NewListingPage.tsx:12-24` posts snake_case (`quality_grade`, `expires_days`);
+   `create-listing.dto.ts:71,92` expect camelCase (`qualityGrade`, `expiresDays`)
+   and the global `ValidationPipe` runs with `forbidNonWhitelisted`
+   (`backend/src/main.ts`). `ListingDetailPage.tsx:75` posts `listing_id`;
+   `create-order.dto.ts:18-19` expects `listingId`. So even if the gate (C1) and
+   auth (C2) were fixed and the calls were pointed at NestJS, the bodies would be
+   rejected 400.
+
+6. **Money is `Float`, the design says integer minor units.**
+   `docs/04-database-design.md:20,87` mandate integer minor units and forbid
+   floats for money. Shipped reality: `marketplace_listings.price` and
+   `marketplace_orders.unit_price`/`total_price` are `Float`
+   (`backend/src/marketplace/listing.entity.ts`, `order.entity.ts`), and
+   `price_history.price` is `Float` in the migration
+   (`f6d50714db20_initial_current_schema.py:34`). Eight money columns drift.
+
+### D. Schema vs design document
+
+`docs/04-database-design.md` specifies **26** tables (§4.1–§4.26). The shipped
+migrations create **20**:
+
+| Source | Tables |
+|---|---|
+| `f6d50714db20_initial_current_schema.py` (16) | `users`, `cooperatives`, `cooperative_members`, `marketplace_listings`, `marketplace_orders`, `marketplace_reviews`, `disease_detections`, `chat_sessions`, `chat_messages`, `quality_grades`, `export_standards`, `price_history`, `price_predictions`, `product_specs`, `equipment_listings`, `feasibility_reports` |
+| `a1b2c3d4e5f6_add_identity_tables.py` (4) | `email_verifications`, `password_reset_tokens`, `otp_codes`, `refresh_tokens` |
+
+Tables in the design with **no shipped counterpart**: `user_profiles`,
+`farmer_profiles`, `processor_profiles`, `consumer_profiles`, `crops`,
+`payments`, `order_messages`, `notifications`, `audit_logs`, `ai_jobs`,
+`knowledge_documents`, `ai_reviews` (12).
+Shipped tables **not** in the design: `export_standards`, `product_specs`,
+`equipment_listings`, `feasibility_reports`, `cooperative_members`.
+Name drift on several shared ones (`market_listings` → `marketplace_listings`,
+`orders` → `marketplace_orders`, `order_reviews` → `marketplace_reviews`,
+`ai_disease_detections` → `disease_detections`, `ai_chat_messages` →
+`chat_sessions`+`chat_messages`, `ai_quality_reports` → `quality_grades`).
+
+The roadmap's own "21 tables" (Phase 7 status row) and "15 tables" (old snapshot)
+are both wrong; the verified count is **20**.
+
+### E. Tests as they actually stand
+
+| Suite | Files | Covers | Does **not** cover |
+|---|---|---|---|
+| Backend unit (`npm test`) | `auth.service.spec.ts`, `internal-token.service.spec.ts`, `token.util.spec.ts` | identity, token hashing, internal token minting | **no marketplace test** — the module from `3234ca1` is untested |
+| Backend e2e (`npm run test:e2e`) | `test/auth.e2e-spec.ts` | auth against real Postgres | no marketplace, no AI-service hop |
+| Frontend (`npm test`) | `auth-forms`, `i18n-parity`, `route-gating`, `session` | auth screens, locale parity, gating logic | no feature page (disease/prices/chat/quality/marketplace) is rendered |
+| Python (`pytest`) | `test_config`, `test_frontend_design_tokens`, `test_internal_service_token`, `test_phase1_hardening` | config, tokens, hardening | **no route test** — none of the 40+ FastAPI endpoints is exercised |
+
+So the "35 unit / 30 e2e / 51 frontend / 46 Python" counts are real, but they do
+not touch the marketplace module, any AI route, or any role feature page. A green
+suite here is not evidence that those paths work.
+
+### F. Next work packages (ordered, each independently verifiable)
+
+Ordered by "unblocks the most with the least coordinated change".
+
+**WP-1 — Make the marketplace pages load at all (frontend only).**
+Remove the `localStorage` gate from the four marketplace components and replace
+it with `useSession()` (the pattern every other role page already uses). Verify
+by loading `/marketplace` signed out and seeing the browse list, and signed in as
+farmer and seeing own listings. *No backend change.*
+
+**WP-2 — Pick one owner for marketplace and delete the other.**
+Per `docs/09` §6 the owner is NestJS. Point the four marketplace pages at
+`AUTH_BASE_URL`-style absolute `:4000` calls and switch response handling from
+`response.data.success`/`response.data.data` to the plain NestJS shape; rename
+the posted fields to camelCase (`qualityGrade`, `expiresDays`, `listingId`). Then
+remove `ai-service/app/routes/marketplace.py`, its service, and its model, and
+drop the `marketplace` router from `ai-service/app/main.py:39`. Verify: a signed-in
+farmer can create a listing, a consumer can order it, and
+`curl localhost:8000/api/v1/marketplace/listings` 404s.
+
+**WP-3 — Decide the browser→FastAPI auth story and implement it once.**
+Either (a) have NestJS proxy every AI call through the unused `AiServiceClient`
+(so the browser only ever talks to :4000 and FastAPI trusts `X-Internal-Service-Token`),
+or (b) make FastAPI `role_guard` also accept the NestJS-issued bearer token. The
+roadmap's Phase 6 and the roadmap's own §"The browser never calls FastAPI
+directly" (README) both imply (a). Until this is chosen, disease/prices/chat/
+quality/feasibility/equipment stay `PARTIAL` no matter what the pages do. Verify:
+each of those six pages returns data while logged in, with FastAPI not exposed to
+the browser.
+
+**WP-4 — Fix the disease path.**
+`DiseasePage.tsx:36,139` must call `/api/v1/disease/…` (with `/v1`) so the rewrite
+at least aims at FastAPI, then ride WP-3 for auth. Verify: upload an image, get a
+result.
+
+**WP-5 — Add the missing tests before moving more domains.**
+The NestJS marketplace module and every FastAPI AI route are untested. WP-2
+should land with marketplace e2e cases (create/order/transition/ownership
+checks), otherwise Phase 5 keeps migrating untested code.
+
+**WP-6 — Reconcile money columns with `docs/04`.**
+Add a migration converting the eight money columns to integer minor units, or
+amend `docs/04` to accept `Float` and record the deviation. Do not leave the two
+in contradiction.
+
+### CONTRADICTIONS
+
+| # | Document says | Code says | Correction |
+|---|---|---|---|
+| 1 | `docs/IMPLEMENTATION-ROADMAP.md:50` "schema and 21 tables exist" | Two migrations create 20 tables (`f6d50714db20` 16 + `a1b2c3d4e5f6` 4) | The count is **20**, and `docs/04` specifies 26 |
+| 2 | `docs/IMPLEMENTATION-ROADMAP.md` old snapshot "15 tables via a single Alembic revision" | Two revisions, 20 tables | Stale; annotated inline above |
+| 3 | `docs/04-database-design.md:20,87` "money is integer minor units … floats are never used" | `marketplace_listings.price`, `marketplace_orders.unit_price`/`total_price`, `price_history.price` are `Float` | Either migrate to integers or amend the doc; currently contradictory |
+| 4 | `docs/09-platform-decision-rule.md:66` "keep FastAPI focused on AI rather than duplicating users, orders, and payment rules" | `ai-service/app/routes/marketplace.py` still serves listings/orders/reviews, duplicating `backend/src/marketplace/*` | Delete the FastAPI marketplace once WP-2 lands |
+| 5 | `README.md:125` "The browser never calls FastAPI directly" | `frontend/next.config.js:14` rewrites `/api/v1/:path*` straight to FastAPI :8000, and six pages use it | Either the rewrite goes (WP-3a) or the README statement is aspirational, not true |
+| 6 | `README.md:146` "`backend/` — NestJS scaffold (health check only)" | `backend/src` has auth, users, internal, notifications, sms, marketplace modules | Stale since Phase 2; update the README tree |
+| 7 | `README.md:292` Phase 4 "Planned" | Roadmap marks Phase 4 **Done** and it is wired | README table is behind the roadmap |
+| 8 | `backend/src/marketplace/marketplace.controller.ts:11-19` "the frontend change from `response.data.data.listings` to `response.listings` is part of the frontend migration" | No frontend file was changed (`MarketplacePage.tsx:66` still reads `response.data.success`) | The stated precondition for the NestJS response shape has not been done |
+| 9 | Phase 4 outstanding: pages "render their own header-less pages … each needs the role sidebar" | Farmer/processor/consumer role pages now use `DashboardShell`; only the four marketplace pages still carry inline headers, and they never render | The claim is now true only for marketplace, and marketplace is BROKEN for a different reason (C1) |
+| 10 | `docs/IMPLEMENTATION-ROADMAP.md:11-14` "Last verified: Phases 1–4 verified by real command output" | No feature page or AI route is covered by any suite (§E) | The ticks are true for what they scope; the message "21 tables … verified" overstates the data layer |
