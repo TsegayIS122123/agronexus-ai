@@ -37,6 +37,11 @@ INTERNAL_USER_HEADER = "X-Internal-Service-User"
 # A service token exists to cross one network hop, not to serve as a session.
 INTERNAL_TOKEN_TYPE = "internal"
 
+# The audience an internal token must name. This matches the ``aud`` claim
+# minted by backend/src/internal/internal-token.service.ts, so decode() has to
+# expect it explicitly: jose rejects any token whose ``aud`` does not match.
+INTERNAL_TOKEN_AUDIENCE = "ai-service"
+
 
 def _unauthorized(detail: str) -> HTTPException:
     return HTTPException(status_code=401, detail=detail)
@@ -48,7 +53,12 @@ def decode_internal_token(token: str, secret: str) -> dict:
     Split out from the dependency so it can be tested without a database.
     """
     try:
-        payload = jwt.decode(token, secret, algorithms=[get_settings().algorithm])
+        payload = jwt.decode(
+            token,
+            secret,
+            algorithms=[get_settings().algorithm],
+            audience=INTERNAL_TOKEN_AUDIENCE,
+        )
     except JWTError:
         raise _unauthorized("Invalid internal service token")
 
