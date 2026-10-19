@@ -130,8 +130,12 @@ export const get = <T>(
 export const post = <T>(path: string, body?: unknown, headers?: Record<string, string>, baseUrl?: string) =>
   request<T>(path, { method: "POST", body, headers, baseUrl });
 
-export const put = <T>(path: string, body?: unknown) =>
-  request<T>(path, { method: "PUT", body });
+export const put = <T>(
+  path: string,
+  body?: unknown,
+  headers?: Record<string, string>,
+  baseUrl?: string,
+) => request<T>(path, { method: "PUT", body, headers, baseUrl });
 
 export const patch = <T>(path: string, body?: unknown) =>
   request<T>(path, { method: "PATCH", body });
