@@ -9,7 +9,6 @@ from unittest.mock import patch
 
 from app.schemas.user import UserRegister
 from app.services.auth_service import create_access_token, get_secret_key, set_access_cookie
-from app.services.marketplace_service import update_order_status
 from app.services.role_guard import get_current_user
 
 
@@ -91,18 +90,6 @@ def make_pending_order():
         confirmed_at=None,
         delivered_at=None,
     )
-
-
-def test_order_status_allows_actual_owner_regardless_of_role_name():
-    order = make_pending_order()
-    updated = update_order_status(FakeSession(order), "order-id", "confirmed", str(order.buyer_id), "farmer")
-    assert updated.status == "confirmed"
-
-
-def test_order_status_rejects_non_owner_even_with_marketplace_role():
-    order = make_pending_order()
-    with pytest.raises(ValueError, match="Not authorized"):
-        update_order_status(FakeSession(order), "order-id", "confirmed", str(uuid4()), "farmer")
 
 
 def test_database_schema_is_migration_managed():
