@@ -61,7 +61,8 @@ describe('AiProxyService', () => {
       status: 403,
       message: 'Access denied. Required role: [processor]',
     });
-  });  it('translates a 5xx into BadGatewayException', async () => {
+  });
+  it('translates a 5xx into BadGatewayException', async () => {
     client.call.mockResolvedValueOnce({
       ok: false,
       status: 500,
