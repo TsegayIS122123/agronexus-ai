@@ -85,11 +85,24 @@ def test_ethiopic_font_stack_is_preserved(theme_source):
 
 def test_skip_link_target_exists_in_root_layout():
     """SkipLink.tsx navigates to #main-content. If <main> has no such id the
-    skip link is inert and WCAG 2.4.1 (Bypass Blocks) fails."""
-    layout = (REPO_ROOT / "frontend/app/layout.tsx").read_text(encoding="utf-8")
+    skip link is inert and WCAG 2.4.1 (Bypass Blocks) fails.
 
-    assert 'id="main-content"' in layout
-    assert "tabIndex={-1}" in layout
+    The target moved from layout.tsx to SiteChrome.tsx when the root layout
+    gained per-route header suppression: <main id="main-content"> now lives in
+    SiteChrome, which layout.tsx renders on every page. The target must still
+    exist on every page, so both halves are asserted: the id-carrying component
+    must contain the target, and the root layout must render that component.
+    """
+    layout = (REPO_ROOT / "frontend/app/layout.tsx").read_text(encoding="utf-8")
+    site_chrome = (REPO_ROOT / "frontend/components/SiteChrome.tsx").read_text(
+        encoding="utf-8"
+    )
+
+    # (a) the component that carries the id actually has it.
+    assert 'id="main-content"' in site_chrome
+    assert "tabIndex={-1}" in site_chrome
+    # (b) that component is rendered on every page by the root layout.
+    assert "<SiteChrome>" in layout
 
 
 def test_frontend_declares_lint_and_typecheck_scripts():
