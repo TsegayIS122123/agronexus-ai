@@ -10,6 +10,7 @@ import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { InternalModule } from './internal/internal.module';
 import { MarketplaceModule } from './marketplace/marketplace.module';
+import { AiProxyModule } from './ai-proxy/ai-proxy.module';
 import { UsersModule } from './users/users.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { SmsModule } from './notifications/sms.module';
@@ -52,6 +53,7 @@ import { SmsModule } from './notifications/sms.module';
     // existing route uses it yet, so nothing about today's behaviour changes.
     InternalModule,
     MarketplaceModule,
+    AiProxyModule,
   ],
   controllers: [AppController],
   providers: [

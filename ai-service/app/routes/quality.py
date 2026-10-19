@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import Optional
 from app.database import get_db
 from app.services import quality_service
-from app.services.role_guard import require_role
+from app.services.internal_guard import require_internal_role
 from app.models.user import User
 
 router = APIRouter(prefix="/api/v1/quality", tags=["Quality Control AI"])
@@ -13,7 +13,7 @@ async def grade_product(
     file: UploadFile = File(...),
     product_name: str = Form(...),
     product_category: str = Form(...),
-    user: User = Depends(require_role(["processor", "farmer"])),
+    user: User = Depends(require_internal_role(["processor", "farmer"])),
     db: Session = Depends(get_db)
 ):
     """Grade product quality from image"""
@@ -96,7 +96,7 @@ def get_grade_letter(score: float) -> str:
 
 @router.get("/reports")
 def get_reports(
-    user: User = Depends(require_role(["processor", "farmer"])),
+    user: User = Depends(require_internal_role(["processor", "farmer"])),
     db: Session = Depends(get_db)
 ):
     """Get quality reports for the user"""
@@ -123,7 +123,7 @@ def get_reports(
 @router.get("/standards")
 def get_standards(
     product_category: Optional[str] = None,
-    user: User = Depends(require_role(["processor", "farmer", "consumer"]))
+    user: User = Depends(require_internal_role(["processor", "farmer", "consumer"]))
 ):
     """Get export standards"""
     standards = quality_service.get_standards(product_category)

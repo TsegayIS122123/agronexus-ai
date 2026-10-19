@@ -4,7 +4,7 @@ from typing import Optional, List
 from pydantic import BaseModel
 from app.database import get_db
 from app.services import equipment_service
-from app.services.role_guard import require_role
+from app.services.internal_guard import require_internal_role
 from app.models.user import User
 
 router = APIRouter(prefix="/api/v1/equipment", tags=["Equipment Marketplace"])
@@ -23,7 +23,7 @@ class CreateEquipmentRequest(BaseModel):
 @router.post("/listings")
 def create_equipment(
     request: CreateEquipmentRequest,
-    user: User = Depends(require_role(["processor", "farmer"])),
+    user: User = Depends(require_internal_role(["processor", "farmer"])),
     db: Session = Depends(get_db)
 ):
     """Create a new equipment listing"""
