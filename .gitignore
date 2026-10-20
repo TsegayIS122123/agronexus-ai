@@ -66,3 +66,7 @@ patches/
 .DS_Store
 Thumbs.db
 *.tsbuildinfo
+# Pre-downloaded wheels for offline builds (too large to commit)
+ai-service/wheels/*.whl
+!ai-service/wheels/.gitkeep
+
