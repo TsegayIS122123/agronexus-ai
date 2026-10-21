@@ -100,7 +100,7 @@ RUN pip install --prefix=/install --no-deps --no-index --find-links=/wheels "ope
 # Batch 6 - ultralytics (YOLO). Its own layer because it drags in opencv and
 # a few heavy wheels; isolating it means a timeout here does not touch the
 # five batches that succeeded before it.
-RUN pip install --prefix=/install --timeout=300 --retries=20 \
+RUN pip install --prefix=/install --no-deps --timeout=300 --retries=20 \
       "ultralytics==8.3.0"
 
 
