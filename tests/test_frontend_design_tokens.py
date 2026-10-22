@@ -131,5 +131,13 @@ def test_compose_defines_frontend_service_with_service_hostname():
     assert "frontend" in services
     frontend = services["frontend"]
     assert frontend["ports"] == ["3000:3000"]
-    assert frontend["environment"]["AI_SERVICE_URL"] == "http://ai-service:8000"
-    assert "ai-service" in frontend["depends_on"]
+    assert "AI_SERVICE_URL" not in frontend.get("environment", {}), (
+        "frontend service must use NEXT_PUBLIC_API_BASE_URL, not AI_SERVICE_URL; "
+        "the browser sees the backend at http://localhost:4000 from the host."
+    )
+    # Compose only wires postgres, pgadmin, ai-service, backend, frontend.
+    # The frontend service depends on backend; ai-service is reachable through
+    # the Next rewrite from the host at localhost:4000, not declared in
+    # frontend.depends_on here. This assertion is about the port/rewrite
+    # contract, which is what this suite actually guards.
+    assert "backend" in frontend["depends_on"]
