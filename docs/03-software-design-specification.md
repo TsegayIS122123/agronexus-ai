@@ -490,37 +490,37 @@ classDiagram
 
 ## 6. Module design
 
-### 6.1 Auth and Users
+### 6.1 Auth, Users, Roles, Sessions, and Audit Logs
 
-- `AuthController`: register, login, refresh, logout, forgot-password, reset-password, verify-email, request-OTP, verify-OTP.
-- `AuthService`: bcrypt password hashing, token creation and rotation, generic errors, rate limits.
-- `UsersService`: profiles, role extensions, account status, admin-provisioned role changes.
-- Guards: `JwtAuthGuard`, `RolesGuard`, ownership guard, and throttling guard.
+- The NestJS platform backend owns identity and audit: `AuthController`/`AuthService`, `UsersService`,
+  password hashing and token rotation, role changes, rate limits, `EmailVerification`, `OTP`,
+  `RefreshToken`, `PasswordResetToken`, audit recording, and audit log consolidation.
+- GraphQL/graphql is out of scope; the public API is REST under `/api/v1`.
+- `InternalTokenService` mints a short-lived signed token (`X-Internal-Service-Token`, `X-Internal-Service-User`)
+  per backend hop, so the browser never calls a raw FastAPI endpoint. `InternalModule` registers that
+  dependency; `ai-proxy` modules consume it.
 
 ### 6.2 Marketplace and Orders
 
-- Marketplace owns listing validation, pagination, expiry, and seller ownership.
-- Orders owns server-side totals, inventory/quantity locking, state transitions, reviews, and order messages.
-- Order events are published to the notification queue and WebSocket gateway after the transaction commits.
+- NestJS owns listing validation, pagination, expiry, seller ownership, order totals, quantity locking,
+  order state transitions, reviews, categories, regions, and order messages.
+- `MarketplaceModule`, `OrdersModule`, and `ReviewModule` implement the domain. The AI service reads these
+  tables through its database connection; NestJS never delegates this ownership.
 
-### 6.3 Payments
+### 6.3 Payments and Notifications
 
-- `ChapaProvider` implements `PaymentsProvider`: `initialize`, `verify`, and `refund`.
-- Payment state changes are keyed by `tx_ref`, validated against the order amount and currency, and applied idempotently.
-- Browser redirects are informational; server-to-server verification is authoritative.
+- The NestJS platform backend implements Chapa initialization, signature/webhook verification, and
+  idempotent refunds; `NotificationsModule` and `SmsModule` deliver email, SMS, and in-app events with retry.
+- Payment rows, `payments`, `notifications`, and `audit_logs` are created by the NestJS services after
+  successful business actions.
 
-### 6.4 Notifications and Audit
+### 6.4 AI Gateway and FastAPI
 
-- Notification providers implement email, SMS, and in-app delivery behind one interface.
-- Delivery is queued, retried with bounded backoff, and recorded.
-- Audit events are append-only, redacted, correlation-aware, and created by user, webhook, or system actors.
-
-### 6.5 AI Gateway and FastAPI
-
-- NestJS validates user authorization, quotas, and public DTOs before forwarding to FastAPI.
+- The NestJS AI proxy (`ai-proxy`) validates authorization, quotas, and public DTOs before forwarding to FastAPI.
 - FastAPI validates the internal service credential, input limits, model availability, and output schema.
-- Results include model version, confidence, latency, timestamp, and review status.
 - Long-running training and batch inference use workers, not request threads.
+- `AI_SERVICE_URL` is the only host-level address the backend needs to reach ai-service; the browser sees
+  only NestJS behind `localhost:4000`.
 
 ## 7. API design
 

@@ -9,7 +9,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from app.core.config import get_database_url
 from app.database import Base
-from app.models import user, disease, chat, cooperative, industry, marketplace, prediction, quality
+from app.models import user, disease, chat, cooperative, industry, prediction, quality
 
 config = context.config
 

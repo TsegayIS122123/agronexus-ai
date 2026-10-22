@@ -70,3 +70,6 @@ Thumbs.db
 ai-service/wheels/*.whl
 !ai-service/wheels/.gitkeep
 
+ai-service/wheels/
+ai-service/agronexus.db
+.freebuff/
