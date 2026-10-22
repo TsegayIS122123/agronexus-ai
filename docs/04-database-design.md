@@ -312,7 +312,7 @@ chain of joins.
 `pending/confirmed/processing/shipped → cancelled` (cancel allowed until shipped).
 
 **Note:** if delivery can be paid separately in a future phase, add `shipping_fee_minor` to the
-order so the total can include delivery. For Phase 1, delivery cost is kept in the listing's
+order so the total can include delivery. For this release, delivery cost is kept in the listing's
 `shipping_fee_minor` and applied at order creation.
 
 ### 4.14 `payments` — Chapa transactions (one or more per order)
@@ -502,7 +502,7 @@ day.
 | updated_at | TIMESTAMPTZ | no | now() | Row updated |
 
 > For a vector-backed search, chunk this content into a separate `knowledge_chunks` table or an
-> external vector store. For Phase 1, this table is the source of truth for approved documents,
+> external vector store. For this release, this table is the source of truth for approved documents,
 > and the retrieval layer reads from it. Retrieval must only use approved and non-expired
 > documents, matching FR-KB-02.
 

@@ -196,7 +196,7 @@ service internally (see `03-software-design-specification.md` for the contract).
 
 ## 8. Scope
 
-### 8.1 In scope (Phase 1 — MVP)
+### 8.1 In scope
 
 - Authentication & profiles (all four roles)
 - Farmer Zone: disease detection, assistant, price forecast, weather
@@ -205,14 +205,14 @@ service internally (see `03-software-design-specification.md` for the contract).
 - Notifications (email + SMS), audit logs, admin basics
 - Tests, CI/CD, deployment (staging + production)
 
-### 8.2 Out of scope (later phases)
+### 8.2 Out of scope
 
 - Native mobile app (the API is mobile-ready from day one)
 - SMS-only (feature-phone) interface
 - Blockchain provenance, carbon credits, crop insurance
 - Voice interface in local languages
 
-### 8.3 Deliberate boundaries — must not be called complete in Phase 1
+### 8.3 Deliberate boundaries
 
 - Native mobile application
 - Production SMS provider integration
@@ -237,13 +237,13 @@ service internally (see `03-software-design-specification.md` for the contract).
 
 ---
 
-## 10. Roadmap
+## 10. Release plan
 
-| Phase | Duration | Goal |
+| Release | Duration | Goal |
 |---|---|---|
-| **Phase 1 — MVP** | ~3 months | Farmer + Industry + Market core with secure payments |
-| **Phase 2 — Full** | ~6 months | Admin dashboards, impact tracker, advanced notifications |
-| **Phase 3 — Advanced** | ~12 months | Mobile app, SMS interface, voice, insurance/provenance pilots |
+| **MVP** | ~3 months | Farmer + Industry + Market core with secure payments |
+| **Full** | ~6 months | Admin dashboards, impact tracker, advanced notifications |
+| **Advanced** | ~12 months | Mobile app, SMS interface, voice, insurance/provenance pilots |
 
 ---
 

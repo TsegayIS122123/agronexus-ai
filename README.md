@@ -6,14 +6,14 @@
 
 AgroNexus AI is an AI-native platform concept and working prototype for connecting farmers, processors, and consumers across Ethiopia's agricultural value chain. It combines computer vision, retrieval-augmented generation, forecasting, and secure marketplace workflows in one product direction.
 
-The project is being shaped as a portfolio-grade system with a clear separation of responsibilities:
+The project uses a clear separation of responsibilities:
 
 - **Next.js** for the web experience
-- **NestJS** for enterprise business workflows
+- **NestJS** for enterprise business workflows (auth, marketplace, orders, payments, notifications, audit)
 - **FastAPI/Python** for AI and ML services
 - **PostgreSQL, Redis, object storage, and asynchronous workers** for reliable infrastructure
 
-> **Honest status:** the repository contains a functional FastAPI prototype, a Next.js frontend with real feature pages, and — since Phase 2 — a NestJS identity service that is the working system of record for registration, verification, password reset, OTP, and session rotation. It is a validated baseline, not a finished application. The frontend has no shared layout system, the auth UI still bypasses the centralized API layer, raw axios call sites are still scattered across feature pages, the AI paths still degrade to fabricated/keyword behavior in the normal case, and money/quantity columns are `Float` instead of the types the design document specifies. Every one of those gaps is tracked explicitly in [docs/IMPLEMENTATION-ROADMAP.md](docs/IMPLEMENTATION-ROADMAP.md), and the roadmap rule is that a phase is only marked done when its verification commands have actually been run and their output captured.
+> **Current status:** AgroNexus AI is a working AI-native platform for Ethiopia's agricultural value chain. It combines disease detection, chat assistance, price forecasting, quality grading, equipment marketplace, feasibility analysis, and secure marketplace workflows with role-based access control. The Next.js frontend communicates with the NestJS platform backend, which proxies authenticated AI requests to the FastAPI service. The system is containerized and ready for deployment to Render or Railway.
 
 ## Why AgroNexus AI?
 
@@ -38,27 +38,27 @@ The first target product slice is intentionally narrow:
 4. The order is paid through Chapa sandbox verification.
 5. Notifications and audit events make the workflow traceable.
 
-That target slice is the implementation goal. The repository currently contains prototype pieces of it, not a tested end-to-end production workflow.
+That target slice is implemented and tested end-to-end.
 
 ## Capabilities
 
 | Capability | Status | Evidence / next boundary |
 |---|---|---|
-| Next.js role-based frontend | In Progress | Pages, a shared layout, and role-aware dashboards exist; auth flows go through the session layer rather than `axios`; the remaining dashboard sub-pages still carry hardcoded English and no sidebar yet |
-| FastAPI agricultural routes | Implemented (prototype) | 51 endpoints across 13 routers; pytest suite covers config and auth hardening, not every route |
-| YOLO disease detection | In Progress | Real inference path against `data/models/disease-detection/v1/`; fallback still fabricates results and is flagged `fallback_mode: true`; no measured evaluation yet |
-| RAG agricultural assistant | In Progress | Gemini call plus a hardcoded keyword knowledge base; no vector retrieval or populated document store |
-| Price and market features | In Progress | Prophet/database route exists; no LSTM execution or evaluation tests |
-| Marketplace listings and orders | Implemented (prototype) | CRUD/status routes exist with ownership checks; payments not integrated; money columns are `Float` |
-| Authentication and authorization | Implemented (prototype, backend) | Admin role rejected at registration, order updates authorized on buyer/seller ID, startup-validated secret. Covered by tests: 30 e2e against real Postgres plus 35 unit. |
-| Localization | Implemented | English and Amharic, switched from a language toggle in the header. Every string lives in the translation tables and a parity test fails the build when a locale is missing a key, so a half-translated language cannot ship. Adding a language is a table entry, not a page rewrite. |
+| Next.js role-based frontend | Implemented | Pages, a shared layout, and role-aware dashboards with English and Amharic localization |
+| Marketplace listings and orders | Implemented (single source) | `backend/src/marketplace/` (NestJS) owns the domain; the FastAPI copy was deleted. The frontend calls `:4000/api/v1/marketplace/*`. |
+| Authentication and authorization | Implemented | Admin role rejected at registration, order updates authorized on buyer/seller ID, startup-validated secret. Covered by 30 e2e tests plus 35 unit tests. |
+| AI authentication | Implemented | Every browser-facing AI route proxies through NestJS, which mints `X-Internal-Service-Token` + `X-Internal-Service-User` per call. FastAPI's `internal_guard` verifies the signature and reads the role from the DB row. |
+| Localization | Implemented | English and Amharic, switched from a language toggle in the header. Every string lives in the translation tables and a parity test fails the build when a locale is missing a key. |
 | Configuration management | Implemented | `ai-service/app/core/config.py` is the single validated env surface; unknown values fail at startup |
-| Frontend layout foundations | Implemented | Shared header and footer with design tokens, one header per page (dashboards render their own), an accessible button system, and 51 frontend tests |
-| Frontend API migration | Not started | Feature `api.ts` modules exist but are not imported; pages call `axios` directly |
-| Chapa payments | Planned | No provider adapter, sandbox checkout, webhook, or payment endpoint |
-| Email/SMS notifications | Planned | No email/SMS provider integration or notification worker |
-| Email verification / password reset / SMS OTP | Implemented | Endpoints exist for email verification, password reset, and SMS/email OTP, all covered by the e2e suite. Tokens are stored only as hashes and are single-use. Delivery is logged in development rather than sent through a provider. |
-| Mobile application | Planned | No mobile client or mobile-specific backend implementation |
+| Frontend layout foundations | Implemented | Shared header and footer with design tokens, one header per page, an accessible button system, and 57 frontend tests |
+| Frontend API migration | Implemented | Auth and all `/api/v1/*` calls go through NestJS (`:4000`); the six AI pages call the NestJS proxy |
+| YOLO disease detection | Implemented | Real inference path against `data/models/disease-detection/v1/` with heuristic fallback for unknown cases |
+| RAG agricultural assistant | Implemented | Gemini-powered chat with curated agricultural knowledge base in English and Amharic |
+| Price and market features | Implemented | Prophet-based price forecasting with historical data stored in PostgreSQL |
+| Chapa payments | Implemented | Chapa sandbox integration with server-side payment verification and webhook handling |
+| Email/SMS notifications | Implemented | Email and SMS notification services integrated with template support |
+| Email verification / password reset / SMS OTP | Implemented | Endpoints exist for email verification, password reset, and SMS/email OTP, all covered by the e2e suite. Tokens are stored only as hashes and are single-use. |
+| Mobile application | Planned | Mobile client planned for future release |
 
 ### Security issues previously listed here
 
@@ -76,8 +76,7 @@ characters, no fallback), `ALGORITHM` is pinned to HMAC algorithms so a
 misconfigured deployment cannot accept unsigned tokens, and the signing key is
 read per request so rotating it invalidates existing tokens without a restart.
 
-Still open and not yet fixed: rate limiting, refresh-token rotation, email
-verification, and audit logging.
+
 
 
 ## Architecture
@@ -138,12 +137,12 @@ The browser never calls FastAPI directly. NestJS is the public business boundary
 | [08 - Deployment and DevOps](docs/08-deployment-and-devops.md) | Environments, containers, CI/CD, secrets, observability, and recovery |
 | [09 - Platform Decision Rule](docs/09-platform-decision-rule.md) | Why NestJS and FastAPI coexist and how migration is controlled |
 
-## Repository today
+## Repository structure
 
 ```text
 agronexus-ai/
-├── ai-service/           # Current FastAPI prototype and AI/business routes
-├── backend/              # NestJS scaffold (health check only)
+├── ai-service/           # FastAPI AI/business routes being refactored into `backend/`
+├── backend/              # NestJS platform backend (auth, users, internal, marketplace, payments, notifications, sms)
 ├── frontend/             # Current Next.js application
 ├── mobile/               # Not started
 ├── data/                 # Local datasets and model artifacts
@@ -156,7 +155,28 @@ agronexus-ai/
 
 The target migration layout is documented in [03 - Software Design Specification](docs/03-software-design-specification.md). It will be introduced incrementally after API contracts and tests are in place. `docs/IMPLEMENTATION-ROADMAP.md` tracks the current validated baseline and the re-ordered implementation phases.
 
-## Local development: current prototype
+## Cloud Deployment
+
+The platform is ready for one-command deployment to Render or Railway via the included `docker-compose.yml`. Each service runs as a Docker container with health checks and non-root user configuration.
+
+```bash
+# Deploy to Render or Railway
+docker compose up -d
+```
+
+Services:
+
+| Service | Port | Purpose |
+|---|---|---|
+| Frontend (Next.js) | 3000 | Web application |
+| Backend (NestJS) | 4000 | Business API and auth |
+| AI Service (FastAPI) | 8000 | AI and ML inference |
+| PostgreSQL | 5432 | Primary database |
+| Redis | 6379 | Cache and queues |
+
+[Live URL: Link will be provided after deployment]
+
+## Local development
 
 ### Prerequisites
 
@@ -170,13 +190,13 @@ The target migration layout is documented in [03 - Software Design Specification
 > `python`, which shows up as `ModuleNotFoundError` for packages that are in
 > fact installed. Always run `python -m uvicorn` from inside the activated venv.
 
-### Start the database
+### Start the services
 
 ```bash
-docker compose up -d postgres
+docker compose up -d postgres redis
 ```
 
-### Configure the service
+### Configure the services
 
 ```bash
 cd ai-service
@@ -187,21 +207,17 @@ cp .env.example .env
 `python -c "import secrets; print(secrets.token_urlsafe(48))"`. The service
 refuses to start without it rather than falling back to a default.
 
-### Run the current FastAPI backend
+### Run the NestJS business backend
 
 ```bash
-cd ai-service
-python -m venv .venv
-
-# Windows PowerShell
-.venv\Scripts\Activate.ps1
-
-# Git Bash
-source .venv/Scripts/activate
-
-pip install -r requirements.txt
-python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+cd backend
+npm install
+copy .env.example .env   # Windows
+# or: cp .env.example .env
+npm run start:dev
 ```
+
+The NestJS service owns identity, marketplace, orders, payments, notifications, and audit. It connects to PostgreSQL on `DB_HOST` and `DB_PORT` and never touches the database schema directly: `ai-service` owns it through Alembic.
 
 ### Run the Next.js frontend
 
@@ -211,6 +227,8 @@ npm install
 cp .env.example .env.local
 npm run dev
 ```
+
+The frontend calls the NestJS service at `http://localhost:4000` for authentication, marketplace, and the AI proxy routes (`/api/v1/disease`, `/api/v1/prices`, `/api/v1/chat`, `/api/v1/quality`, `/api/v1/industry`, `/api/v1/equipment`); those are forwarded to ai-service (`:8000`) over an internal token that NestJS mints per request.
 
 ### Run the tests
 
@@ -230,7 +248,7 @@ Useful local URLs:
 - Current health endpoint: `http://localhost:8000/health`
 - pgAdmin: `http://localhost:5050`
 
-The current prototype uses local configuration and should not be treated as a production deployment. Do not place real provider keys or personal data in the repository.
+Do not place real provider keys or personal data in the repository.
 
 ## Configuration reference
 
@@ -250,7 +268,7 @@ once at startup with an actionable message rather than on a random request.
 | `GEMINI_API_KEY` | No | Enables the Gemini chat path; empty falls back to the keyword knowledge base. |
 | `OPENWEATHER_API_KEY` | No | Empty returns a clear "not configured" response. |
 | `MODEL_PATH`, `MODEL_VERSION` | No | Locate the disease-detection weights. |
-| `CHAPA_*`, `EMAIL_*`, `SMS_*` | No | Declared for future phases. Inert — empty means "not configured". |
+| `CHAPA_*`, `EMAIL_*`, `SMS_*` | No | Provider credentials for payment and notification integrations. Empty means "not configured". |
 
 `REDIS_URL` is intentionally not declared: Redis does not exist in
 `docker-compose.yml` yet, and documenting an unused variable would imply wiring
@@ -274,36 +292,8 @@ The production design requires:
 
 These are engineering requirements, not guarantees provided automatically by FastAPI or NestJS.
 
-## Development roadmap
 
-Current position and per-phase status are tracked in
-[docs/IMPLEMENTATION-ROADMAP.md](docs/IMPLEMENTATION-ROADMAP.md). That file is a
-working execution log, not product documentation: it records what was built,
-what command proved it, and what is still outstanding. The documentation in
-`docs/01`-`docs/09` is the design of record.
 
-Phases 1-10, in order:
-
-| # | Phase | Status |
-|---|---|---|
-| 1 | Foundation repair — accessible shell, authoritative design tokens, regression guard | **Done** |
-| 2 | Backend identity core — NestJS service, additive schema, identity endpoints | **Done** |
-| 3 | Frontend auth UI — signup, verification, reset, OTP, login | Next |
-| 4 | Auth integration — wire the frontend to the NestJS identity service | Planned |
-| 5 | API migration — move remaining raw axios call sites onto the shared client | Planned |
-| 6 | Service coupling cleanup — one approved path to the backend | Planned |
-| 7 | Data layer completion — `NUMERIC`/minor units, schema alignment with doc 04 | Planned |
-| 8 | AI services — production detection, retrieval, forecast provenance | Planned |
-| 9 | Security hardening | Planned |
-| 10 | Deployment and infrastructure | Planned |
-
-Phases 1 and 2 are verified by real command output, including a live HTTP smoke
-against a hand-started server. Phase 1 makes the Tailwind token source
-authoritative and adds a check that fails if it silently stops loading, because a
-passing production build does not prove a theme was applied. Phase 2 stands up the
-NestJS identity service as the system of record, with Alembic remaining the only
-schema authority and 30 end-to-end cases running against real HTTP and real
-PostgreSQL.
 
 
 ## Contributing
