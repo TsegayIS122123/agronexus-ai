@@ -35,6 +35,7 @@ const PUBLIC_PATHS = [
   '/auth/forgot-password',
   '/auth/reset-password',
   '/auth/otp',
+  '/marketplace',
 ];
 
 /** The two screens a signed-in person has no reason to see again. */
