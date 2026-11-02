@@ -37,17 +37,10 @@ build/
 *.safetensors
 
 # ===== Model training artifacts =====
-ai-service/models/
-data/models/*
 
 # Keep lightweight metadata
-!data/models/disease-detection/v1/metrics.json
-!data/models/disease-detection/v1/model_card.md
 
 # ===== Datasets (large) =====
-data/dataset/
-data/raw/
-data/processed/
 
 # ===== IDE =====
 .vscode/
@@ -77,3 +70,30 @@ ai-service/agronexus.db
 # local agent tooling
 .claude/
 .freebuff/
+
+# secrets (templates stay)
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+
+# generated
+*.tsbuildinfo
+dist/
+.next/
+__pycache__/
+.pytest_cache/
+
+# ML: data and weights stay out of git
+ai-service/models/**/*.pt
+ai-service/models/**/*.onnx
+ai-service/models/**/*.pkl
+
+# datasets: contents ignored, README kept
+ml/datasets/*
+!ml/datasets/README.md
+
+# temporary dev helpers
+tools/
