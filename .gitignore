@@ -73,3 +73,7 @@ ai-service/wheels/*.whl
 ai-service/wheels/
 ai-service/agronexus.db
 .freebuff/
+
+# local agent tooling
+.claude/
+.freebuff/
