@@ -1,33 +1,24 @@
-# ===== Secrets =====
+# secrets (templates stay)
 .env
-.env.local
-.env.production
-.env.db
-.env.pgadmin
-.env.*.local
+.env.*
+!.env.example
 
-# ===== Python =====
-__pycache__/
-*.py[cod]
-*.so
-.Python
+# dependencies and build output
+node_modules/
 .venv/
 venv/
-env/
-*.egg-info/
+__pycache__/
+*.py[cod]
 .pytest_cache/
 .mypy_cache/
-
-# ===== Node =====
-node_modules/
-npm-debug.log
 .next/
 out/
 dist/
 build/
-.pnpm-store/
+coverage/
+*.tsbuildinfo
 
-# ===== Model weights (large binaries) =====
+# ML: weights and data stay out of git, docs and metrics stay in
 *.pt
 *.onnx
 *.engine
@@ -35,65 +26,19 @@ build/
 *.pkl
 *.h5
 *.safetensors
-
-# ===== Model training artifacts =====
-
-# Keep lightweight metadata
-
-# ===== Datasets (large) =====
-
-# ===== IDE =====
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# ===== Logs =====
-*.log
-logs/
-
-# ===== Local runnable scripts (not part of the project) =====
-patches/
-
-# ===== OS =====
-.DS_Store
-Thumbs.db
-*.tsbuildinfo
-# Pre-downloaded wheels for offline builds (too large to commit)
-ai-service/wheels/*.whl
-!ai-service/wheels/.gitkeep
-
-ai-service/wheels/
-ai-service/agronexus.db
-.freebuff/
-
-# local agent tooling
-.claude/
-.freebuff/
-
-# secrets (templates stay)
-.env
-.env.*
-!.env.example
-**/.env
-**/.env.*
-!**/.env.example
-
-# generated
-*.tsbuildinfo
-dist/
-.next/
-__pycache__/
-.pytest_cache/
-
-# ML: data and weights stay out of git
-ai-service/models/**/*.pt
-ai-service/models/**/*.onnx
-ai-service/models/**/*.pkl
-
-# datasets: contents ignored, README kept
 ml/datasets/*
 !ml/datasets/README.md
+ml/runs/
 
-# temporary dev helpers
+# local only
+.vscode/
+.idea/
+.claude/
+.freebuff/
 tools/
+patches/
+ai-service/wheels/
+*.log
+logs/
+.DS_Store
+Thumbs.db
