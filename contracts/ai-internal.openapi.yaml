@@ -1,0 +1,52 @@
+openapi: 3.0.3
+info:
+  title: AgroNexus internal AI API (NestJS -> FastAPI)
+  version: 1.0.0
+servers:
+  - url: http://ai-service:8000
+paths:
+  /internal/ai/v1/detect:
+    post:
+      summary: Crop disease inference
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [image, crop_type]
+              properties: {image: {type: string, format: binary}, crop_type: {type: string}, language: {type: string}}
+      responses:
+        "200": {description: "disease_name, confidence, severity, boxes, model_version, needs_review, inference_ms"}
+  /internal/ai/v1/chat:
+    post:
+      summary: RAG answer with citations
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [message]
+              properties: {message: {type: string}, language: {type: string}, role: {type: string}}
+      responses:
+        "200": {description: "answer, sources[], model_version, insufficient_evidence"}
+  /internal/ai/v1/forecast:
+    get:
+      summary: Price forecast
+      parameters:
+        - {name: crop, in: query, required: true, schema: {type: string}}
+        - {name: region, in: query, required: true, schema: {type: string}}
+        - {name: days, in: query, schema: {type: integer, default: 30}}
+      responses:
+        "200": {description: "points[{date, predicted_minor, lower_minor, upper_minor}], model_version, data_freshness"}
+  /internal/ai/v1/grade:
+    post:
+      summary: Quality screening (not certification)
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [image, product_category]
+              properties: {image: {type: string, format: binary}, product_category: {type: string}}
+      responses:
+        "200": {description: "grade, confidence, defects[], certification_status=screening_only, model_version"}
